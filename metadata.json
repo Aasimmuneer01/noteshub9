@@ -1,0 +1,6 @@
+{
+  "name": "Educational Study Material Platform",
+  "description": "A comprehensive educational platform for browsing, reading, and downloading study materials like PDFs, notes, and previous year papers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

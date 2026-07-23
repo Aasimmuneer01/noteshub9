@@ -1,0 +1,137 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email in ['admin@example.com', 'aasimmuneer349@gmail.com', 'admin@eduplatform.com', 'mahnoormuneer4999@gmail.com', 'mahnoor4999@gmail.com'] ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'superadmin', 'moderator'])
+      );
+    }
+
+    match /users/{userId} {
+      allow read: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (
+        isAdmin() || 
+        (
+          request.auth.uid == userId && 
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isBanned', 'banReason', 'isPremium', 'premiumPlan', 'premiumExpiry', 'premiumGrantedBy', 'premiumGrantedAt', 'premiumStatus']) &&
+          (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['accountStatus']) ||
+            (
+              request.resource.data.accountStatus == 'active' && 
+              resource.data.accountStatus == 'warning' && 
+              request.resource.data.warningAcknowledged == true
+            )
+          )
+        )
+      );
+      allow delete: if isAdmin();
+
+      // Premium sub-collections
+      match /bookmarks/{bookmarkId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /history/{historyId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /notes/{noteId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /highlights/{highlightId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /folders/{folderId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /chats/{chatId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      match /aiUsage/{docId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Collection group rules for admin analytics
+    match /{path=**}/bookmarks/{doc} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/history/{doc} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/notes/{doc} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/highlights/{doc} {
+      allow read: if isAdmin();
+    }
+    match /{path=**}/folders/{doc} {
+      allow read: if isAdmin();
+    }
+
+    match /bannedFingerprints/{fp} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /resources/{resource} {
+      allow read: if true;
+      allow update: if isAdmin() || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloadCount']);
+      allow create, delete: if isAdmin();
+    }
+
+    match /categories/{category} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /classes/{classLevel} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /boards/{board} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{announcement} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /creatorInfo/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /otps/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /ai_usage/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /ai_settings/{document=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    match /website_control/settings {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

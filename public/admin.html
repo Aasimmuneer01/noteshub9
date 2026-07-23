@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite Admin Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --secondary: #0f172a;
+            --background: #020617;
+            --surface: #0a0f1e;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: #f8fafc;
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .glass {
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .sidebar-item.active {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--primary);
+            border-right: 3px solid var(--primary);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .loader {
+            border: 3px solid #334155;
+            border-top: 3px solid #0ea5e9;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="antialiased">
+    <!-- Auth Overlay -->
+    <div id="auth-overlay" class="fixed inset-0 z-[100] glass flex items-center justify-center">
+        <div class="bg-surface p-8 rounded-3xl border border-white/10 w-full max-w-md shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-primary/20">
+                    <i data-lucide="shield-check" class="text-primary w-8 h-8"></i>
+                </div>
+                <h1 class="text-2xl font-black uppercase tracking-tight">Admin Gate</h1>
+                <p class="text-gray-500 text-sm font-medium">Verify credentials to access secure sector</p>
+            </div>
+            <div class="space-y-4">
+                <div class="relative">
+                    <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                    <input id="login-email" type="email" placeholder="Admin Email" class="w-full bg-white border border-gray-300 rounded-xl pl-12 pr-4 py-3 outline-none focus:border-primary text-black font-semibold transition-all">
+                </div>
+                <div class="relative">
+                    <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4"></i>
+                    <input id="login-password" type="password" placeholder="Passcode" class="w-full bg-white border border-gray-300 rounded-xl pl-12 pr-4 py-3 outline-none focus:border-primary text-black font-semibold transition-all">
+                </div>
+                <button id="btn-login" class="w-full bg-primary text-secondary font-black py-4 rounded-xl hover:brightness-110 transition-all shadow-lg shadow-primary/20 uppercase tracking-widest text-sm flex items-center justify-center gap-2">
+                    <span id="login-text">Initiate Access</span>
+                    <div id="login-loader" class="loader hidden"></div>
+                </button>
+                <p id="login-error" class="text-red-500 text-xs text-center font-bold hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div id="main-layout" class="flex min-h-screen hidden">
+        <!-- Sidebar -->
+        <aside class="w-72 border-r border-white/5 flex flex-col glass sticky top-0 h-screen shrink-0">
+            <div class="p-8 border-b border-white/5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary border border-primary/20">
+                        <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+                    </div>
+                    <span class="font-black text-xl uppercase tracking-tighter">Elite<span class="text-primary">Admin</span></span>
+                </div>
+            </div>
+            
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <button data-tab="dashboard" class="sidebar-item active w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="grid" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Dashboard
+                </button>
+                <button data-tab="users" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="users" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> User Manager
+                </button>
+                <button data-tab="premium" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="crown" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Premium Manager
+                </button>
+                <button data-tab="resources" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="file-text" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Resource Manager
+                </button>
+                <button data-tab="upload" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="upload-cloud" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Upload Resources
+                </button>
+                <button data-tab="categories" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="folder" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Categories
+                </button>
+                <button data-tab="ai" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="brain" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> AI Management
+                </button>
+                <button data-tab="website-control" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="power" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Website Control
+                </button>
+                <button data-tab="analytics" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Analytics
+                </button>
+                <button data-tab="creator" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="user-plus" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Creator Settings
+                </button>
+                <button data-tab="settings" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="settings" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Settings
+                </button>
+            </nav>
+
+            <div class="p-4 border-t border-white/5">
+                <button id="btn-logout" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold text-red-400 hover:bg-red-500/10 transition-all">
+                    <i data-lucide="log-out" class="w-5 h-5"></i> Terminate Session
+                </button>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <main class="flex-1 flex flex-col min-w-0">
+            <!-- Header -->
+            <header class="h-20 border-b border-white/5 flex items-center justify-between px-10 sticky top-0 z-50 glass">
+                <div class="flex items-center gap-4">
+                    <h2 id="current-tab-title" class="text-xl font-bold uppercase tracking-tight text-white">Dashboard</h2>
+                </div>
+                <div class="flex items-center gap-6">
+                    <div class="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/5">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#22c55e]"></div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">System Live</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="text-right hidden sm:block">
+                            <p id="admin-name" class="text-sm font-bold text-white">Administrator</p>
+                            <p id="admin-role" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Level 10 Security</p>
+                        </div>
+                        <div class="w-10 h-10 bg-gradient-to-br from-primary to-blue-600 rounded-xl flex items-center justify-center border border-white/10 shadow-lg">
+                            <i data-lucide="shield" class="text-white w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="p-10 flex-1">
+                <!-- Dashboard Content -->
+                <section id="dashboard" class="tab-content active space-y-10">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl group hover:border-primary/30 transition-all">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-blue-500/10 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform"><i data-lucide="users"></i></div>
+                                <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Total Users</span>
+                            </div>
+                            <p id="stat-total-users" class="text-4xl font-black font-mono">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl group hover:border-green-500/30 transition-all">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-green-500/10 text-green-500 rounded-2xl group-hover:scale-110 transition-transform"><i data-lucide="activity"></i></div>
+                                <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Active Users</span>
+                            </div>
+                            <p id="stat-active-users" class="text-4xl font-black font-mono">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl group hover:border-yellow-500/30 transition-all">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-yellow-500/10 text-yellow-500 rounded-2xl group-hover:scale-110 transition-transform"><i data-lucide="crown"></i></div>
+                                <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Premium</span>
+                            </div>
+                            <p id="stat-premium-users" class="text-4xl font-black font-mono">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl group hover:border-red-500/30 transition-all">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-red-500/10 text-red-500 rounded-2xl group-hover:scale-110 transition-transform"><i data-lucide="shield-alert"></i></div>
+                                <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Banned</span>
+                            </div>
+                            <p id="stat-banned-users" class="text-4xl font-black font-mono">0</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                            <div class="flex items-center justify-between mb-8">
+                                <h3 class="text-xl font-bold uppercase tracking-tight flex items-center gap-3"><i data-lucide="trending-up" class="text-primary"></i> Engagement Analysis</h3>
+                                <select class="bg-white border border-gray-300 rounded-xl px-4 py-2 text-xs font-bold outline-none text-black font-semibold">
+                                    <option>Last 7 Days</option>
+                                    <option>Last 30 Days</option>
+                                </select>
+                            </div>
+                            <div class="h-[400px]">
+                                <canvas id="mainChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl">
+                                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Content Impact</h4>
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 bg-purple-500/10 text-purple-500 rounded-lg flex items-center justify-center"><i data-lucide="eye" class="w-4 h-4"></i></div>
+                                            <span class="text-sm font-medium">Total Views</span>
+                                        </div>
+                                        <span id="stat-total-views" class="font-mono font-bold">0</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 bg-orange-500/10 text-orange-500 rounded-lg flex items-center justify-center"><i data-lucide="download" class="w-4 h-4"></i></div>
+                                            <span class="text-sm font-medium">Total Downloads</span>
+                                        </div>
+                                        <span id="stat-total-downloads" class="font-mono font-bold">0</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 bg-primary/10 text-primary rounded-lg flex items-center justify-center"><i data-lucide="file-text" class="w-4 h-4"></i></div>
+                                            <span class="text-sm font-medium">Resources</span>
+                                        </div>
+                                        <span id="stat-total-resources" class="font-mono font-bold">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-primary p-6 rounded-3xl shadow-xl shadow-primary/20">
+                                <h4 class="text-secondary font-black uppercase tracking-tight mb-2">Pro Intel</h4>
+                                <p class="text-secondary/80 text-xs font-medium leading-relaxed">System is performing within optimal parameters. No critical breaches detected in last 24 cycles.</p>
+                                <button class="mt-4 bg-secondary text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg hover:brightness-110 transition-all">Audit Logs</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Users Content -->
+                <section id="users" class="tab-content space-y-8">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="relative w-full md:w-96">
+                            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4"></i>
+                            <input id="user-search" type="text" placeholder="Search by name, email or UID..." class="w-full bg-white border border-gray-300 rounded-2xl pl-12 pr-4 py-4 outline-none focus:border-primary text-black font-semibold transition-all shadow-inner">
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="refresh-users" class="p-4 bg-surface border border-white/5 rounded-2xl hover:bg-white/5 transition-all text-gray-400 hover:text-white"><i data-lucide="rotate-cw" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-white/5 border-b border-white/5">
+                                    <tr>
+                                        <th class="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-gray-500">Identity</th>
+                                        <th class="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-gray-500">Status</th>
+                                        <th class="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-gray-500">Premium</th>
+                                        <th class="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-gray-500">Activity</th>
+                                        <th class="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-gray-500 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <!-- Dynamic Content -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Premium Content -->
+                <section id="premium" class="tab-content space-y-10">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div class="bg-surface p-6 rounded-2xl border border-white/5 shadow-lg">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Premium Total</p>
+                            <p id="stat-prem-total" class="text-3xl font-black font-mono">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-2xl border border-white/5 shadow-lg">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Expiring Today</p>
+                            <p id="stat-prem-today" class="text-3xl font-black font-mono text-yellow-500">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-2xl border border-white/5 shadow-lg">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Expiring Week</p>
+                            <p id="stat-prem-week" class="text-3xl font-black font-mono text-blue-500">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-2xl border border-white/5 shadow-lg">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Expired Today</p>
+                            <p id="stat-prem-expired-today" class="text-3xl font-black font-mono text-orange-500">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-2xl border border-white/5 shadow-lg">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Expired Total</p>
+                            <p id="stat-prem-expired-total" class="text-3xl font-black font-mono text-red-500">0</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                        <h3 class="text-xl font-bold uppercase tracking-tight mb-8">Premium Active Assets</h3>
+                        <div id="premium-users-list" class="space-y-4">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Resource Manager -->
+                <section id="resources" class="tab-content space-y-8">
+                     <div class="bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                        <div class="flex items-center justify-between mb-8">
+                            <h3 class="text-xl font-bold uppercase tracking-tight">Platform Archives</h3>
+                            <div class="relative w-64">
+                                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-3 h-3"></i>
+                                <input id="res-search" type="text" placeholder="Filter resources..." class="w-full bg-white border border-gray-300 rounded-xl pl-8 pr-4 py-2 text-xs outline-none text-black font-semibold">
+                            </div>
+                        </div>
+                        <div id="resources-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Dynamic Content -->
+                        </div>
+                     </div>
+                </section>
+
+                <!-- Edit Resource Modal -->
+                <div id="modal-edit-resource" class="bg-surface w-full max-w-xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
+                    <div class="p-8 border-b border-white/5 flex items-center justify-between bg-primary/10">
+                        <h3 class="text-xl font-bold uppercase tracking-tight text-primary">Edit Resource</h3>
+                        <button class="modal-close p-2 hover:bg-primary/10 rounded-xl transition-all text-primary"><i data-lucide="x"></i></button>
+                    </div>
+                    <div class="p-8 space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Title</label>
+                            <input id="edit-up-title" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Category</label>
+                                <select id="edit-up-category" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold"></select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Class Level</label>
+                                <input id="edit-up-class" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">PDF URL</label>
+                            <input id="edit-up-pdf" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Thumbnail URL</label>
+                            <input id="edit-up-thumb" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Description</label>
+                            <textarea id="edit-up-desc" rows="3" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold"></textarea>
+                        </div>
+                        <div class="flex items-center gap-4 p-4 bg-background rounded-2xl border border-white/5">
+                            <span class="text-sm font-bold text-gray-400">Visibility Status</span>
+                            <div id="btn-toggle-visibility" class="flex items-center gap-2 cursor-pointer">
+                                <div id="visibility-toggle-track" class="w-12 h-6 bg-secondary rounded-full relative p-1">
+                                    <div id="visibility-toggle-thumb" class="w-4 h-4 bg-gray-500 rounded-full transition-all"></div>
+                                </div>
+                                <span id="visibility-label" class="text-[10px] font-bold uppercase text-gray-500">Hidden</span>
+                            </div>
+                        </div>
+                        <button id="btn-save-resource" class="w-full py-5 bg-primary text-secondary font-black rounded-2xl shadow-xl shadow-primary/20 transition-all uppercase tracking-widest mt-4">Save Changes</button>
+                    </div>
+                </div>
+
+                <!-- Edit Category Modal -->
+                <div id="modal-edit-category" class="bg-surface w-full max-w-md rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
+                    <div class="p-8 border-b border-white/5 flex items-center justify-between bg-primary/10">
+                        <h3 class="text-xl font-bold uppercase tracking-tight text-primary">Edit Category</h3>
+                        <button class="modal-close p-2 hover:bg-primary/10 rounded-xl transition-all text-primary"><i data-lucide="x"></i></button>
+                    </div>
+                    <div class="p-8 space-y-6">
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Category Name</label>
+                            <input id="edit-cat-name" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <button id="btn-save-category" class="w-full py-5 bg-primary text-secondary font-black rounded-2xl shadow-xl shadow-primary/20 transition-all uppercase tracking-widest">Update Node</button>
+                    </div>
+                </div>
+
+                <!-- Upload Content -->
+                <section id="upload" class="tab-content">
+                    <div class="max-w-2xl mx-auto bg-surface p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                        <div class="text-center mb-10">
+                            <div class="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-primary/20">
+                                <i data-lucide="upload-cloud" class="text-primary w-8 h-8"></i>
+                            </div>
+                            <h3 class="text-2xl font-black uppercase tracking-tight">Resource Ingestion</h3>
+                            <p class="text-gray-500 text-sm">Synchronize new educational assets to the platform</p>
+                        </div>
+                        
+                        <form id="upload-form" class="space-y-6">
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Title</label>
+                                <input id="up-title" type="text" placeholder="Enter asset title" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="space-y-1">
+                                    <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Category</label>
+                                    <select id="up-category" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all appearance-none"></select>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Class Level</label>
+                                    <input id="up-class" type="text" placeholder="Class Level" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">PDF Storage Path/URL</label>
+                                <input id="up-pdf" type="text" placeholder="URL or storage reference" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
+                            </div>
+                             <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Thumbnail Path/URL</label>
+                                <input id="up-thumb" type="text" placeholder="Cover image reference" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Description</label>
+                                <textarea id="up-desc" placeholder="Asset breakdown..." rows="3" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-primary text-secondary font-black py-5 rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-100 transition-all uppercase tracking-widest">Execute Upload</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Categories Content -->
+                <section id="categories" class="tab-content space-y-8">
+                    <div class="bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                        <h3 class="text-xl font-bold uppercase tracking-tight mb-8 text-white">Category Taxonomy</h3>
+                        <div class="flex gap-4 mb-10">
+                            <input id="new-cat-name" type="text" placeholder="New category name..." class="flex-1 bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
+                            <button id="add-cat" class="px-8 py-4 bg-primary text-secondary font-black rounded-2xl hover:brightness-110 transition-all uppercase tracking-widest text-sm">Add Node</button>
+                        </div>
+                        <div id="categories-grid" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- AI Management Content -->
+                <section id="ai" class="tab-content space-y-8">
+                    <div class="bg-surface p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                        <h3 class="text-2xl font-black uppercase tracking-tight mb-8">AI Control Center</h3>
+                        
+                        <!-- AI System -->
+                        <div class="mb-10">
+                            <h4 class="text-lg font-bold mb-4">AI System</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="p-4 bg-black rounded-xl border border-white/5 flex items-center justify-between">
+                                    <span>Global AI Enabled</span>
+                                    <button id="toggle-ai-enabled" class="px-4 py-2 bg-primary text-secondary rounded-lg font-bold">Toggle</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Providers -->
+                        <div class="mb-10">
+                            <h4 class="text-lg font-bold mb-4">AI Providers</h4>
+                            <div class="space-y-4">
+                                <div class="p-4 bg-black rounded-xl border border-white/5 flex items-center justify-between">
+                                    <span>Groq</span>
+                                    <div class="flex items-center gap-4">
+                                        <input id="groq-api-key" type="password" placeholder="API Key" class="text-black font-semibold bg-white border border-gray-300 rounded-lg p-2 text-sm">
+                                        <button id="test-groq" class="px-4 py-2 bg-green-500/20 text-green-500 rounded-lg font-bold text-sm">Test</button>
+                                        <button id="save-groq" class="px-4 py-2 bg-primary text-secondary rounded-lg font-bold text-sm">Save</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+
+                
+                <!-- Website Control Content -->
+                <section id="website-control" class="tab-content space-y-8">
+                    <div class="bg-surface p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                        <h3 class="text-2xl font-black uppercase tracking-tight mb-8">Website Status</h3>
+                        
+                        <div class="space-y-6">
+                            <!-- Config -->
+                            <div class="p-6 bg-black rounded-xl border border-white/5 space-y-4">
+                                <div class="space-y-3">
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="radio" name="website-status" value="Online" class="form-radio text-primary h-5 w-5 bg-surface border-white/5">
+                                        <span class="text-white flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span> Online</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="radio" name="website-status" value="Temporary" class="form-radio text-primary h-5 w-5 bg-surface border-white/5">
+                                        <span class="text-white flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500 inline-block"></span> Temporary Shutdown</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="radio" name="website-status" value="Permanent" class="form-radio text-primary h-5 w-5 bg-surface border-white/5">
+                                        <span class="text-white flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-700 inline-block"></span> Permanent Shutdown</span>
+                                    </label>
+                                    <label class="flex items-center space-x-3 cursor-pointer">
+                                        <input type="radio" name="website-status" value="Maintenance" class="form-radio text-primary h-5 w-5 bg-surface border-white/5">
+                                        <span class="text-white flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-yellow-500 inline-block"></span> Maintenance Mode</span>
+                                    </label>
+                                </div>
+
+                                <div class="pt-4 border-t border-white/10 mt-6 space-y-4">
+                                    <input id="shutdown-title" type="text" placeholder="Custom Title (e.g., Website Unavailable)" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                    <textarea id="shutdown-description" placeholder="Custom Description (e.g., We are currently performing maintenance.)" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold"></textarea>
+                                    <input id="shutdown-return-date" type="date" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                    <input id="shutdown-email" type="email" placeholder="Support Contact Email" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                    <button id="save-website-settings" class="w-full py-3 bg-primary text-secondary rounded-lg font-bold">Save Changes</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </section>
+                
+                <!-- Analytics Content -->
+                <section id="analytics" class="tab-content space-y-10">
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                             <h3 class="text-xl font-bold uppercase tracking-tight mb-8">Geographic Distribution</h3>
+                             <div class="h-64 flex items-center justify-center text-gray-600 font-bold uppercase tracking-widest">Map Processor Offline</div>
+                        </div>
+                        <div class="bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                             <h3 class="text-xl font-bold uppercase tracking-tight mb-8">Retention Curve</h3>
+                             <canvas id="retentionChart"></canvas>
+                        </div>
+                     </div>
+                </section>
+
+                <!-- Creator Content -->
+                <section id="creator" class="tab-content">
+                    <div class="max-w-2xl mx-auto bg-surface p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                        <h3 class="text-2xl font-black uppercase tracking-tight text-center mb-10">Creator Profile</h3>
+                        <div id="creator-form" class="space-y-6">
+                            <div class="flex justify-center mb-6">
+                                <div class="relative group">
+                                    <div class="w-32 h-32 bg-secondary rounded-3xl border-4 border-white/5 overflow-hidden shadow-2xl">
+                                        <img id="c-img-preview" src="" alt="" class="w-full h-full object-cover">
+                                    </div>
+                                    <button class="absolute -bottom-2 -right-2 bg-primary text-secondary p-3 rounded-2xl shadow-xl hover:scale-110 transition-transform"><i data-lucide="camera" class="w-5 h-5"></i></button>
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Profile Image URL</label>
+                                <input id="c-img-url" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all" oninput="document.getElementById('c-img-preview').src = this.value">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Display Name</label>
+                                <input id="c-name" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Biography</label>
+                                <textarea id="c-bio" rows="3" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all"></textarea>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="space-y-1">
+                                    <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Social X</label>
+                                    <input id="c-x" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Instagram</label>
+                                    <input id="c-ig" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
+                                </div>
+                            </div>
+                            <button id="save-creator" class="w-full bg-primary text-secondary font-black py-5 rounded-2xl shadow-xl shadow-primary/20 transition-all uppercase tracking-widest mt-4">Commit Changes</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Settings Content -->
+                <section id="settings" class="tab-content">
+                    <div class="bg-surface p-12 rounded-[2.5rem] border border-white/5 text-center space-y-6">
+                        <div class="w-20 h-20 bg-red-500/10 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+                            <i data-lucide="shield-alert" class="w-10 h-10"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold uppercase tracking-tight">System Core Configuration</h3>
+                        <p class="text-gray-500 max-w-md mx-auto">Access to low-level infrastructure settings. Modify with extreme caution. Platform-wide changes will take immediate effect.</p>
+                        
+                        <div class="max-w-md mx-auto space-y-4 pt-10">
+                            <div class="flex items-center justify-between p-4 bg-background rounded-2xl border border-white/5">
+                                <span class="text-sm font-bold text-gray-400">Registration Status</span>
+                                <div class="w-12 h-6 bg-green-500/20 rounded-full relative p-1 cursor-pointer border border-green-500/30">
+                                    <div class="w-4 h-4 bg-green-500 rounded-full ml-auto shadow-[0_0_8px_#22c55e]"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-container" class="fixed inset-0 z-[1000] glass hidden flex items-center justify-center p-4">
+        <!-- Ban User Modal -->
+        <div id="modal-ban" class="fixed inset-0 z-[1000] glass hidden flex items-center justify-center p-4">
+            <div class="bg-surface w-full max-w-sm rounded-[2.5rem] border border-white/10 shadow-2xl p-8">
+                <h3 class="text-xl font-bold uppercase tracking-tight mb-4">Restrict User Access</h3>
+                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-2">Reason for Suspension</label>
+                <textarea id="ban-reason-input" class="w-full bg-white border border-gray-300 rounded-xl p-4 mb-4 outline-none focus:border-primary text-black font-semibold" rows="3" placeholder="Explain why this account is being restricted..."></textarea>
+                
+                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-2">Ban Until (Optional)</label>
+                <input type="datetime-local" id="ban-until-input" class="w-full bg-white border border-gray-300 rounded-xl p-4 mb-4 outline-none focus:border-primary text-black font-semibold">
+
+                <div class="flex gap-3">
+                    <button class="btn-cancel-modal flex-1 py-3 bg-white/5 rounded-xl text-sm font-bold hover:bg-white/10">Abort</button>
+                    <button id="confirm-ban-btn" class="flex-1 py-3 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600">Confirm Restriction</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Details Modal -->
+        <div id="modal-user" class="bg-surface w-full max-w-2xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
+            <div class="p-8 border-b border-white/5 flex items-center justify-between bg-white/5">
+                <h3 class="text-xl font-bold uppercase tracking-tight">Identity Dossier</h3>
+                <button class="modal-close p-2 hover:bg-white/5 rounded-xl transition-all"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                <div class="flex items-center gap-6">
+                    <div id="md-user-avatar" class="w-24 h-24 bg-gradient-to-br from-primary to-blue-600 rounded-[2rem] flex items-center justify-center text-4xl text-white font-black shadow-2xl border-4 border-white/10"></div>
+                    <div>
+                        <h4 id="md-user-name" class="text-2xl font-black text-white leading-tight">...</h4>
+                        <p id="md-user-email" class="text-gray-500 font-medium">...</p>
+                        <div class="flex gap-2 mt-3">
+                            <span id="md-user-badge-role" class="px-3 py-1 bg-white/5 text-[10px] font-bold uppercase rounded-lg border border-white/5">Member</span>
+                            <span id="md-user-badge-status" class="px-3 py-1 bg-green-500/10 text-green-500 text-[10px] font-bold uppercase rounded-lg border border-green-500/20">Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-background p-4 rounded-2xl border border-white/5">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Registered On</p>
+                        <p id="md-user-joined" class="font-bold text-white">...</p>
+                    </div>
+                    <div class="bg-background p-4 rounded-2xl border border-white/5">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Last Sync</p>
+                        <p id="md-user-last-login" class="font-bold text-white">...</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-4 border-t border-white/5">
+                    <h5 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Authorization Controls</h5>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button id="md-btn-ban" class="py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-all text-xs">Restrict Account</button>
+                        <button id="md-btn-verify" class="py-3 bg-primary/10 text-primary border border-primary/20 rounded-xl font-bold hover:bg-primary hover:text-secondary transition-all text-xs">Force Validation</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button id="md-btn-warning" class="py-3 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-xl font-bold hover:bg-yellow-500 hover:text-white transition-all text-xs">Send Warning</button>
+                        <button id="md-btn-reset-warnings" class="py-3 bg-gray-500/10 text-gray-300 border border-gray-500/20 rounded-xl font-bold hover:bg-gray-500 hover:text-white transition-all text-xs">Reset Warnings</button>
+                    </div>
+                    <button id="md-btn-delete" class="w-full py-3 bg-surface border border-red-500/20 text-red-400 rounded-xl font-bold hover:bg-red-900 transition-all text-xs">Terminate All Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Warning Modal -->
+        <div id="modal-warning" class="fixed inset-0 z-[1000] glass hidden flex items-center justify-center p-4">
+            <div class="bg-surface w-full max-w-sm rounded-[2.5rem] border border-white/10 shadow-2xl p-8">
+                <h3 class="text-xl font-bold uppercase tracking-tight mb-4 text-yellow-500">Issue Warning</h3>
+                <label class="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-2">Warning Reason</label>
+                <textarea id="warning-reason-input" class="w-full bg-white border border-gray-300 rounded-xl p-4 mb-4 outline-none focus:border-yellow-500 text-black font-semibold" rows="3" placeholder="Enter reason for warning..."></textarea>
+                
+                <div class="flex gap-3">
+                    <button class="btn-cancel-modal flex-1 py-3 bg-white/5 rounded-xl text-sm font-bold hover:bg-white/10">Abort</button>
+                    <button id="confirm-warning-btn" class="flex-1 py-3 bg-yellow-500 text-secondary rounded-xl text-sm font-bold hover:bg-yellow-600">Issue Warning</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Premium Grant Modal -->
+        <div id="modal-premium" class="bg-surface w-full max-w-xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
+             <div class="p-8 border-b border-white/5 flex items-center justify-between bg-yellow-500/10">
+                <h3 class="text-xl font-bold uppercase tracking-tight text-yellow-500 flex items-center gap-2"><i data-lucide="crown"></i> Elevate Identity</h3>
+                <button class="modal-close p-2 hover:bg-yellow-500/10 rounded-xl transition-all text-yellow-500"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-8 space-y-8">
+                <div id="prem-user-info" class="flex items-center gap-4 p-4 bg-background rounded-2xl border border-white/5">
+                    <div class="w-12 h-12 bg-yellow-500/20 text-yellow-500 rounded-xl flex items-center justify-center font-bold">U</div>
+                    <div>
+                        <p id="p-md-name" class="font-bold text-white leading-tight">...</p>
+                        <p id="p-md-email" class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">...</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <h5 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Duration Presets</h5>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button data-duration="1h" class="prem-preset p-3 bg-background border border-white/5 rounded-xl text-[10px] font-bold uppercase hover:border-yellow-500 transition-all">1 Hour</button>
+                        <button data-duration="1d" class="prem-preset p-3 bg-background border border-white/5 rounded-xl text-[10px] font-bold uppercase hover:border-yellow-500 transition-all">1 Day</button>
+                        <button data-duration="7d" class="prem-preset p-3 bg-background border border-white/5 rounded-xl text-[10px] font-bold uppercase hover:border-yellow-500 transition-all">7 Days</button>
+                        <button data-duration="1mo" class="prem-preset p-3 bg-background border border-white/5 rounded-xl text-[10px] font-bold uppercase hover:border-yellow-500 transition-all">1 Month</button>
+                        <button data-duration="3mo" class="prem-preset p-3 bg-background border border-white/5 rounded-xl text-[10px] font-bold uppercase hover:border-yellow-500 transition-all">3 Months</button>
+                        <button data-duration="6mo" class="prem-preset p-3 bg-background border border-white/5 rounded-xl text-[10px] font-bold uppercase hover:border-yellow-500 transition-all">6 Months</button>
+                        <button data-duration="1y" class="prem-preset p-3 bg-background border border-white/5 rounded-xl text-[10px] font-bold uppercase hover:border-yellow-500 transition-all">1 Year</button>
+                        <button data-duration="inf" class="prem-preset p-3 bg-yellow-500/20 border border-yellow-500/30 text-yellow-500 rounded-xl text-[10px] font-black uppercase hover:bg-yellow-500 hover:text-secondary transition-all">Infinity</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4 pt-4 border-t border-white/5">
+                    <h5 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Temporal Customization</h5>
+                    <div class="flex gap-4">
+                        <input id="prem-custom-date" type="date" class="flex-1 bg-white border border-gray-300 rounded-xl p-4 text-xs font-bold uppercase outline-none focus:border-yellow-500 text-black font-semibold">
+                        <input id="prem-custom-time" type="time" class="w-32 bg-white border border-gray-300 rounded-xl p-4 text-xs font-bold uppercase outline-none focus:border-yellow-500 text-black font-semibold">
+                    </div>
+                </div>
+
+                <button id="btn-grant-premium" class="w-full py-5 bg-yellow-500 text-secondary font-black rounded-2xl shadow-xl shadow-yellow-500/20 hover:scale-[1.02] transition-all uppercase tracking-widest">Authorize Access</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    <div id="toast-container" class="fixed bottom-10 right-10 z-[2000] flex flex-col gap-3"></div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, onSnapshot, query, where, orderBy, updateDoc, setDoc, deleteDoc, serverTimestamp, limit, collectionGroup, arrayUnion } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIG INJECTION
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjpGS1Oj6yhHv3wv4F2tET69N_Qe9DMh0",
+            authDomain: "resourceswebsite-4871a.firebaseapp.com",
+            projectId: "resourceswebsite-4871a",
+            storageBucket: "resourceswebsite-4871a.firebasestorage.app",
+            messagingSenderId: "499105267177",
+            appId: "1:499105267177:web:d88137205e617e294c1f78"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        window.db = db;
+        window.doc = doc;
+        window.getDoc = getDoc;
+        window.setDoc = setDoc;
+
+        // UI STATE
+        let currentUser = null;
+        let usersData = [];
+        let resourcesData = [];
+        let categoriesData = [];
+        let selectedUserId = null;
+        let chartInstance = null;
+
+        // AUTH HANDLER
+        const btnLogin = document.getElementById('btn-login');
+        const loginEmail = document.getElementById('login-email');
+        const loginPass = document.getElementById('login-password');
+        const loginError = document.getElementById('login-error');
+        const loginLoader = document.getElementById('login-loader');
+        const loginText = document.getElementById('login-text');
+        const authOverlay = document.getElementById('auth-overlay');
+        const mainLayout = document.getElementById('main-layout');
+
+        btnLogin.addEventListener('click', async () => {
+            loginError.classList.add('hidden');
+            loginLoader.classList.remove('hidden');
+            loginText.classList.add('opacity-0');
+            
+            try {
+                const cred = await signInWithEmailAndPassword(auth, loginEmail.value, loginPass.value);
+                const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
+                const userData = userDoc.data();
+                
+                const isAdminEmail = ['admin@example.com', 'aasimmuneer349@gmail.com', 'admin@eduplatform.com'].includes(cred.user.email);
+                if (isAdminEmail || ['admin', 'superadmin', 'moderator'].includes(userData?.role)) {
+                    // Success
+                } else {
+                    await signOut(auth);
+                    throw new Error("Insufficient security clearance.");
+                }
+            } catch (err) {
+                loginError.textContent = err.message;
+                loginError.classList.remove('hidden');
+                loginLoader.classList.add('hidden');
+                loginText.classList.remove('opacity-0');
+            }
+        });
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDoc = await getDoc(doc(db, 'users', user.uid));
+                const data = userDoc.data();
+                const isAdminEmail = ['admin@example.com', 'aasimmuneer349@gmail.com', 'admin@eduplatform.com'].includes(user.email);
+                if (isAdminEmail || ['admin', 'superadmin', 'moderator'].includes(data?.role)) {
+                    currentUser = { uid: user.uid, ...data, role: data?.role || (isAdminEmail ? 'admin' : 'user') };
+                    authOverlay.classList.add('hidden');
+                    mainLayout.classList.remove('hidden');
+                    document.getElementById('admin-name').textContent = data?.displayName || 'Admin';
+                    document.getElementById('admin-role').textContent = (currentUser.role).toUpperCase() + ' ACCESS';
+                    initApp();
+                } else {
+                    authOverlay.classList.remove('hidden');
+                    mainLayout.classList.add('hidden');
+                }
+            } else {
+                authOverlay.classList.remove('hidden');
+                mainLayout.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+        // TAB NAVIGATION
+        const sidebarItems = document.querySelectorAll('.sidebar-item');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const tabTitle = document.getElementById('current-tab-title');
+
+        sidebarItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const target = item.getAttribute('data-tab');
+                sidebarItems.forEach(i => i.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                item.classList.add('active');
+                document.getElementById(target).classList.add('active');
+                tabTitle.textContent = item.textContent.trim();
+                
+                if (target === 'analytics') renderAnalytics();
+            });
+        });
+
+        // TOAST SYSTEM
+        function toast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            el.className = `glass p-4 rounded-2xl border border-white/5 shadow-2xl flex items-center gap-3 transform translate-x-10 opacity-0 transition-all duration-300`;
+            const icon = type === 'error' ? 'shield-alert' : (type === 'success' ? 'check-circle' : 'info');
+            const color = type === 'error' ? 'text-red-500' : (type === 'success' ? 'text-green-500' : 'text-primary');
+            
+            el.innerHTML = `
+                <div class="p-2 bg-white/5 ${color} rounded-lg"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
+                <span class="text-sm font-bold text-white">${message}</span>
+            `;
+            container.appendChild(el);
+            lucide.createIcons();
+            
+            setTimeout(() => el.classList.remove('translate-x-10', 'opacity-0'), 10);
+            setTimeout(() => {
+                el.classList.add('translate-x-10', 'opacity-0');
+                setTimeout(() => el.remove(), 300);
+            }, 3000);
+        }
+
+        // INITIALIZATION
+        async function initApp() {
+            lucide.createIcons();
+            startListeners();
+            loadCreatorData();
+            loadWebsiteControl();
+            loadAiConfig();
+        }
+
+        async function loadAiConfig() {
+            try {
+                const docRef = doc(db, 'ai_settings', 'global');
+                const docSnap = await getDoc(docRef);
+                const config = docSnap.exists() ? docSnap.data() : { enabled: true, maintenanceMode: false, providers: {} };
+                
+                if (config.enabled !== undefined) {
+                    document.getElementById('toggle-ai-enabled').innerText = config.enabled ? 'Enabled' : 'Disabled';
+                    if (config.providers && config.providers.groq) {
+                        document.getElementById('groq-api-key').value = config.providers.groq.apiKey || '';
+                    }
+                }
+            } catch (e) {
+                console.error('Load AI config error:', e);
+            }
+        }
+
+        document.getElementById('toggle-ai-enabled').addEventListener('click', async () => {
+            const currentText = document.getElementById('toggle-ai-enabled').innerText;
+            const newState = currentText !== 'Enabled';
+            
+            try {
+                const docRef = doc(db, 'ai_settings', 'global');
+                await setDoc(docRef, { enabled: newState }, { merge: true });
+                loadAiConfig();
+                toast('AI status toggled', 'success');
+            } catch (e) {
+                console.error('Toggle AI error:', e);
+                toast('Failed to toggle AI status: ' + e.message, 'error');
+            }
+        });
+
+        document.getElementById('save-groq').addEventListener('click', async () => {
+            const apiKey = document.getElementById('groq-api-key').value;
+            try {
+                const docRef = doc(db, 'ai_settings', 'global');
+                await setDoc(docRef, { providers: { groq: { apiKey } } }, { merge: true });
+                toast('Groq API key saved', 'success');
+            } catch (e) {
+                console.error('Save Groq error:', e);
+                toast('Failed to save Groq key: ' + e.message, 'error');
+            }
+        });
+
+        async function loadWebsiteControl() {
+            try {
+                const docRef = doc(db, 'website_control', 'settings');
+                const docSnap = await getDoc(docRef);
+                const settings = docSnap.exists() ? docSnap.data() : { mode: 'Online' };
+                
+                const radios = document.getElementsByName('website-status');
+                for (const radio of radios) {
+                    if (radio.value === settings.mode) {
+                        radio.checked = true;
+                        break;
+                    }
+                }
+                
+                document.getElementById('shutdown-title').value = settings.title || '';
+                document.getElementById('shutdown-description').value = settings.description || '';
+                document.getElementById('shutdown-return-date').value = settings.returnDate || '';
+                document.getElementById('shutdown-email').value = settings.contactEmail || '';
+            } catch (e) {
+                console.error('Load website control error:', e);
+            }
+        }
+
+        document.getElementById('save-website-settings').addEventListener('click', async () => {
+            let selectedMode = 'Online';
+            const radios = document.getElementsByName('website-status');
+            for (const radio of radios) {
+                if (radio.checked) {
+                    selectedMode = radio.value;
+                    break;
+                }
+            }
+
+            const settings = {
+                mode: selectedMode,
+                enabled: selectedMode === 'Online',
+                title: document.getElementById('shutdown-title').value,
+                description: document.getElementById('shutdown-description').value,
+                returnDate: document.getElementById('shutdown-return-date').value,
+                contactEmail: document.getElementById('shutdown-email').value
+            };
+            try {
+                const docRef = doc(db, 'website_control', 'settings');
+                await setDoc(docRef, settings, { merge: true });
+                toast('Website status and settings updated', 'success');
+            } catch (e) {
+                console.error('Save settings error:', e);
+                toast('Failed to update settings: ' + e.message, 'error');
+            }
+        });
+
+        const creatorDocRef = doc(db, 'settings', 'creator');
+
+        async function loadCreatorData() {
+            try {
+                const snap = await getDoc(creatorDocRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    document.getElementById('c-name').value = data.name || '';
+                    document.getElementById('c-bio').value = data.bio || '';
+                    document.getElementById('c-x').value = data.x || '';
+                    document.getElementById('c-ig').value = data.ig || '';
+                    document.getElementById('c-img-url').value = data.imageUrl || '';
+                    document.getElementById('c-img-preview').src = data.imageUrl || 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop';
+                }
+            } catch (err) { console.error("Error loading creator:", err); }
+        }
+
+        document.getElementById('save-creator').addEventListener('click', async () => {
+            const data = {
+                name: document.getElementById('c-name').value,
+                bio: document.getElementById('c-bio').value,
+                x: document.getElementById('c-x').value,
+                ig: document.getElementById('c-ig').value,
+                imageUrl: document.getElementById('c-img-url').value,
+                updatedAt: serverTimestamp()
+            };
+            try {
+                await setDoc(creatorDocRef, data, { merge: true });
+                toast("Creator profile updated", "success");
+            } catch (err) { toast(err.message, "error"); }
+        });
+
+        function startListeners() {
+            // USERS LISTENER
+            onSnapshot(collection(db, 'users'), (snap) => {
+                usersData = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+                updateDashboardStats();
+                updateUsersTable();
+                updatePremiumAnalytics();
+                updatePremiumUsersList();
+                checkExpirations(); // Auto-revocation logic
+            });
+
+            // RESOURCES LISTENER
+            onSnapshot(collection(db, 'resources'), (snap) => {
+                resourcesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                updateDashboardStats();
+                updateResourcesList();
+                updateUploadCategories();
+            });
+
+            // CATEGORIES LISTENER
+            onSnapshot(query(collection(db, 'categories'), orderBy('name')), (snap) => {
+                categoriesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                updateCategoriesGrid();
+                updateUploadCategories();
+            });
+        }
+
+        // AUTO-REVOCATION LOGIC
+        async function checkExpirations() {
+            const now = new Date();
+            const expired = usersData.filter(u => u.isPremium && u.premiumExpiry && u.premiumPlan !== 'Lifetime' && u.premiumExpiry.toDate() < now);
+            
+            for (const u of expired) {
+                try {
+                    await updateDoc(doc(db, 'users', u.uid), {
+                        isPremium: false,
+                        premiumStatus: 'expired'
+                    });
+                    console.log(`[CORE] System auto-revoked premium for: ${u.email}`);
+                } catch (err) {
+                    console.error(`[CRITICAL] Revocation failed for ${u.email}:`, err);
+                }
+            }
+        }
+
+        // UI UPDATERS
+        function updateDashboardStats() {
+            const total = usersData.length;
+            const banned = usersData.filter(u => u.isBanned).length;
+            const premium = usersData.filter(u => u.isPremium).length;
+            const active = total - banned;
+
+            document.getElementById('stat-total-users').textContent = total;
+            document.getElementById('stat-banned-users').textContent = banned;
+            document.getElementById('stat-premium-users').textContent = premium;
+            document.getElementById('stat-active-users').textContent = active;
+
+            let totalViews = 0;
+            let totalDownloads = 0;
+            resourcesData.forEach(r => {
+                totalViews += (r.viewCount || 0);
+                totalDownloads += (r.downloadCount || 0);
+            });
+
+            document.getElementById('stat-total-views').textContent = totalViews;
+            document.getElementById('stat-total-downloads').textContent = totalDownloads;
+            document.getElementById('stat-total-resources').textContent = resourcesData.length;
+
+            renderDashboardChart();
+        }
+
+        function updateUsersTable() {
+            const search = document.getElementById('user-search').value.toLowerCase();
+            const filtered = usersData.filter(u => 
+                u.displayName?.toLowerCase().includes(search) || 
+                u.email?.toLowerCase().includes(search) || 
+                u.uid.includes(search)
+            ).slice(0, 50);
+
+            const body = document.getElementById('users-table-body');
+            body.innerHTML = '';
+
+            filtered.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-white/5 hover:bg-white/5 transition-colors group';
+                
+                const regDate = u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString() : 'N/A';
+                const premiumTime = getRemainingTime(u);
+
+                tr.innerHTML = `
+                    <td class="px-8 py-5">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-secondary rounded-xl flex items-center justify-center font-black text-white border border-white/10">${u.displayName?.charAt(0) || 'U'}</div>
+                            <div>
+                                <p class="text-sm font-bold text-white">${u.displayName || 'Unset'}</p>
+                                <p class="text-[10px] text-gray-500 font-mono">${u.email}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-8 py-5">
+                        <span class="px-3 py-1 rounded-lg text-[10px] font-bold uppercase ${u.isBanned ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-green-500/10 text-green-500 border border-green-500/20'}">
+                            ${u.isBanned ? 'Banned' : 'Active'}
+                        </span>
+                    </td>
+                    <td class="px-8 py-5">
+                        <div class="flex flex-col gap-1">
+                            <span class="px-3 py-1 rounded-lg text-[10px] font-bold uppercase w-fit ${u.isPremium ? 'bg-yellow-500/10 text-yellow-500 border border-yellow-500/20' : 'bg-surface text-gray-500 border border-white/5'}">
+                                ${u.isPremium ? 'Premium' : 'Free'}
+                            </span>
+                            ${u.isPremium ? `<span class="text-[8px] font-mono text-gray-400 font-bold">${premiumTime}</span>` : ''}
+                        </div>
+                    </td>
+                    <td class="px-8 py-5">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Joined</p>
+                        <p class="text-xs font-mono text-white">${regDate}</p>
+                    </td>
+                    <td class="px-8 py-5 text-right">
+                        <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                            <button onclick="openUserModal('${u.uid}')" class="p-2 bg-white/5 rounded-lg hover:text-primary transition-all"><i data-lucide="eye" class="w-4 h-4"></i></button>
+                            <button onclick="openPremiumModal('${u.uid}')" class="p-2 bg-white/5 rounded-lg hover:text-yellow-500 transition-all"><i data-lucide="crown" class="w-4 h-4"></i></button>
+                        </div>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        function getRemainingTime(u) {
+            if (!u.isPremium || !u.premiumExpiry) return '';
+            if (u.premiumPlan === 'Lifetime') return 'Infinity';
+            
+            const now = new Date();
+            const expiry = u.premiumExpiry.toDate();
+            const diff = expiry - now;
+            
+            if (diff <= 0) return 'Expired';
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+            if (days > 0) return `${days}d ${hours}h`;
+            if (hours > 0) return `${hours}h ${minutes}m`;
+            return `${minutes}m remaining`;
+        }
+
+        function updatePremiumAnalytics() {
+            const now = new Date();
+            const todayStr = now.toDateString();
+
+            const premium = usersData.filter(u => u.isPremium).length;
+            const expiringToday = usersData.filter(u => {
+                if (!u.isPremium || !u.premiumExpiry || u.premiumPlan === 'Lifetime') return false;
+                return u.premiumExpiry.toDate().toDateString() === todayStr;
+            }).length;
+
+            const expiringWeek = usersData.filter(u => {
+                if (!u.isPremium || !u.premiumExpiry || u.premiumPlan === 'Lifetime') return false;
+                const expiry = u.premiumExpiry.toDate();
+                const week = new Date(now);
+                week.setDate(now.getDate() + 7);
+                return expiry > now && expiry <= week;
+            }).length;
+
+            const expiredToday = usersData.filter(u => {
+                if (!u.premiumExpiry || u.isPremium) return false;
+                return u.premiumExpiry.toDate().toDateString() === todayStr;
+            }).length;
+
+            const expiredTotal = usersData.filter(u => u.premiumStatus === 'expired').length;
+
+            document.getElementById('stat-prem-total').textContent = premium;
+            document.getElementById('stat-prem-today').textContent = expiringToday;
+            document.getElementById('stat-prem-week').textContent = expiringWeek;
+            document.getElementById('stat-prem-expired-today').textContent = expiredToday;
+            document.getElementById('stat-prem-expired-total').textContent = expiredTotal;
+        }
+
+        function updatePremiumUsersList() {
+            const list = document.getElementById('premium-users-list');
+            list.innerHTML = '';
+            
+            const premiumUsers = usersData.filter(u => u.isPremium).sort((a, b) => {
+                if (a.premiumPlan === 'Lifetime') return 1;
+                if (b.premiumPlan === 'Lifetime') return -1;
+                return (a.premiumExpiry?.toDate() || 0) - (b.premiumExpiry?.toDate() || 0);
+            });
+
+            if (premiumUsers.length === 0) {
+                list.innerHTML = '<div class="text-center py-10 text-gray-600 font-bold uppercase tracking-widest">No Premium Assets Detected</div>';
+                return;
+            }
+
+            premiumUsers.forEach(u => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center justify-between p-4 bg-background rounded-2xl border border-white/5 group hover:border-yellow-500/30 transition-all';
+                const time = getRemainingTime(u);
+                
+                el.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-yellow-500/10 text-yellow-500 rounded-xl flex items-center justify-center"><i data-lucide="crown" class="w-5 h-5"></i></div>
+                        <div>
+                            <p class="text-white font-bold text-sm">${u.displayName || 'Unset'}</p>
+                            <p class="text-[10px] text-gray-500 font-mono">${u.email}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Plan: ${u.premiumPlan}</p>
+                        <p class="text-sm font-black font-mono text-yellow-500">${time}</p>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+            lucide.createIcons();
+        }
+
+        function updateResourcesList() {
+            const search = document.getElementById('res-search').value.toLowerCase();
+            const filtered = resourcesData.filter(r => r.title.toLowerCase().includes(search));
+            const list = document.getElementById('resources-list');
+            list.innerHTML = '';
+
+            filtered.forEach(r => {
+                const el = document.createElement('div');
+                el.className = `bg-background p-5 rounded-3xl border ${r.isHidden ? 'border-red-500/20' : 'border-white/5'} flex items-center gap-4 group hover:border-primary/40 transition-all`;
+                
+                el.innerHTML = `
+                    <div class="w-14 h-14 bg-secondary rounded-2xl flex items-center justify-center text-primary border border-white/5 overflow-hidden shrink-0">
+                        ${r.thumbnailUrl ? `<img src="${r.thumbnailUrl}" class="w-full h-full object-cover">` : '<i data-lucide="file-text" class="w-6 h-6"></i>'}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h5 class="text-white font-bold truncate">${r.title}</h5>
+                            ${r.isHidden ? '<span class="text-[8px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded font-bold uppercase">Hidden</span>' : ''}
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">${r.category || 'N/A'}</p>
+                        <div class="flex gap-4 mt-2">
+                             <div class="flex items-center gap-1 text-[10px] text-gray-400 font-mono"><i data-lucide="eye" class="w-3 h-3"></i> ${r.viewCount || 0}</div>
+                             <div class="flex items-center gap-1 text-[10px] text-gray-400 font-mono"><i data-lucide="download" class="w-3 h-3"></i> ${r.downloadCount || 0}</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button onclick="openEditResourceModal('${r.id}')" class="p-2 text-primary hover:bg-primary/10 rounded-lg"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                        <button onclick="deleteResource('${r.id}')" class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+            lucide.createIcons();
+        }
+
+        function updateCategoriesGrid() {
+            const grid = document.getElementById('categories-grid');
+            grid.innerHTML = '';
+            categoriesData.forEach(c => {
+                const el = document.createElement('div');
+                el.className = 'bg-background p-4 rounded-2xl border border-white/5 flex items-center justify-between group hover:border-primary/30 transition-all';
+                el.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-primary/10 text-primary rounded-lg"><i data-lucide="tag" class="w-4 h-4"></i></div>
+                        <span class="text-sm font-bold text-white">${c.name}</span>
+                    </div>
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                        <button onclick="openEditCategoryModal('${c.id}')" class="p-2 text-primary hover:bg-primary/10 rounded-lg"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                        <button onclick="deleteCategory('${c.id}')" class="p-2 text-gray-600 hover:text-red-500 rounded-lg transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                `;
+                grid.appendChild(el);
+            });
+            lucide.createIcons();
+        }
+
+        function updateUploadCategories() {
+            const select = document.getElementById('up-category');
+            if (!select) return;
+            select.innerHTML = '<option value="">Select Domain</option>';
+            categoriesData.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                select.appendChild(opt);
+            });
+        }
+
+        // CHARTS
+        function renderDashboardChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+            
+            // Mock data for visual impact
+            const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Views',
+                            data: [65, 59, 80, 81, 56, 55, 40],
+                            borderColor: '#0ea5e9',
+                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'DLS',
+                            data: [28, 48, 40, 19, 86, 27, 90],
+                            borderColor: '#a855f7',
+                            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 3,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { display: false },
+                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { weight: 'bold', size: 10 } } }
+                    }
+                }
+            });
+        }
+
+        // MODAL LOGIC
+        const modalContainer = document.getElementById('modal-container');
+        const modalUser = document.getElementById('modal-user');
+        const modalPremium = document.getElementById('modal-premium');
+
+        window.openUserModal = (uid) => {
+            selectedUserId = uid;
+            const u = usersData.find(x => x.uid === uid);
+            if (!u) return;
+
+            document.getElementById('md-user-avatar').textContent = u.displayName?.charAt(0) || 'U';
+            document.getElementById('md-user-name').textContent = u.displayName || 'Unset';
+            document.getElementById('md-user-email').textContent = u.email;
+            document.getElementById('md-user-badge-role').textContent = u.role?.toUpperCase() || 'MEMBER';
+            document.getElementById('md-user-badge-status').textContent = u.isBanned ? 'BANNED' : 'ACTIVE';
+            document.getElementById('md-user-joined').textContent = u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString() : 'N/A';
+            document.getElementById('md-user-last-login').textContent = u.lastLogin?.toDate ? u.lastLogin.toDate().toLocaleString() : 'N/A';
+            
+            const btnBan = document.getElementById('md-btn-ban');
+            btnBan.textContent = u.isBanned ? 'Authorize Account' : 'Restrict Account';
+            btnBan.className = u.isBanned ? 'py-3 bg-green-500/10 text-green-500 border border-green-500/20 rounded-xl font-bold hover:bg-green-500 hover:text-white transition-all text-xs' : 'py-3 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl font-bold hover:bg-red-500 hover:text-white transition-all text-xs';
+
+            modalContainer.classList.remove('hidden');
+            modalUser.classList.remove('hidden');
+            setTimeout(() => modalUser.classList.remove('scale-95', 'opacity-0'), 10);
+            lucide.createIcons();
+        };
+
+        window.openPremiumModal = (uid) => {
+            selectedUserId = uid;
+            const u = usersData.find(x => x.uid === uid);
+            if (!u) return;
+
+            // Reset state
+            selectedExpiry = null;
+            document.querySelectorAll('.prem-preset').forEach(b => b.classList.remove('bg-yellow-500', 'text-secondary'));
+            document.getElementById('prem-custom-date').value = '';
+            document.getElementById('prem-custom-time').value = '';
+
+            document.getElementById('p-md-name').textContent = u.displayName || 'Unset';
+            document.getElementById('p-md-email').textContent = u.email;
+
+            modalContainer.classList.remove('hidden');
+            modalPremium.classList.remove('hidden');
+            setTimeout(() => modalPremium.classList.remove('scale-95', 'opacity-0'), 10);
+            lucide.createIcons();
+        };
+
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', closeModal);
+        });
+
+        const modalEditResource = document.getElementById('modal-edit-resource');
+        const modalEditCategory = document.getElementById('modal-edit-category');
+
+        function closeModal() {
+            [modalUser, modalPremium, modalEditResource, modalEditCategory].forEach(m => {
+                m.classList.add('scale-95', 'opacity-0');
+            });
+            setTimeout(() => {
+                modalContainer.classList.add('hidden');
+                [modalUser, modalPremium, modalEditResource, modalEditCategory].forEach(m => m.classList.add('hidden'));
+            }, 300);
+        }
+
+        // EDIT RESOURCE LOGIC
+        let editingResourceId = null;
+        let editingResourceIsHidden = false;
+
+        window.openEditResourceModal = (id) => {
+            editingResourceId = id;
+            const r = resourcesData.find(x => x.id === id);
+            if (!r) return;
+
+            document.getElementById('edit-up-title').value = r.title;
+            document.getElementById('edit-up-category').value = r.category || '';
+            document.getElementById('edit-up-class').value = r.classLevel || '';
+            document.getElementById('edit-up-pdf').value = r.pdfUrl;
+            document.getElementById('edit-up-thumb').value = r.thumbnailUrl || '';
+            document.getElementById('edit-up-desc').value = r.description || '';
+            
+            editingResourceIsHidden = !!r.isHidden;
+            updateVisibilityUI();
+
+            modalContainer.classList.remove('hidden');
+            modalEditResource.classList.remove('hidden');
+            setTimeout(() => modalEditResource.classList.remove('scale-95', 'opacity-0'), 10);
+            
+            // Populate categories in edit select
+            const select = document.getElementById('edit-up-category');
+            select.innerHTML = '<option value="">Select Domain</option>';
+            categoriesData.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                if (c.id === r.category) opt.selected = true;
+                select.appendChild(opt);
+            });
+            lucide.createIcons();
+        };
+
+        function updateVisibilityUI() {
+            const track = document.getElementById('visibility-toggle-track');
+            const thumb = document.getElementById('visibility-toggle-thumb');
+            const label = document.getElementById('visibility-label');
+            
+            if (editingResourceIsHidden) {
+                track.classList.replace('bg-secondary', 'bg-red-500/20');
+                thumb.classList.add('ml-auto', 'bg-red-500');
+                thumb.classList.remove('bg-gray-500');
+                label.textContent = "Hidden";
+                label.classList.replace('text-gray-500', 'text-red-500');
+            } else {
+                track.classList.replace('bg-red-500/20', 'bg-secondary');
+                thumb.classList.remove('ml-auto', 'bg-red-500');
+                thumb.classList.add('bg-gray-500');
+                label.textContent = "Visible";
+                label.classList.replace('text-red-500', 'text-gray-500');
+            }
+        }
+
+        document.getElementById('btn-toggle-visibility').addEventListener('click', () => {
+            editingResourceIsHidden = !editingResourceIsHidden;
+            updateVisibilityUI();
+        });
+
+        document.getElementById('btn-save-resource').addEventListener('click', async () => {
+            if (!editingResourceId) return;
+            const data = {
+                title: document.getElementById('edit-up-title').value,
+                category: document.getElementById('edit-up-category').value,
+                classLevel: document.getElementById('edit-up-class').value,
+                pdfUrl: document.getElementById('edit-up-pdf').value,
+                thumbnailUrl: document.getElementById('edit-up-thumb').value,
+                description: document.getElementById('edit-up-desc').value,
+                isHidden: editingResourceIsHidden
+            };
+
+            try {
+                await updateDoc(doc(db, 'resources', editingResourceId), data);
+                toast("Asset metadata synchronized", "success");
+                closeModal();
+            } catch (err) { toast(err.message, "error"); }
+        });
+
+        // EDIT CATEGORY LOGIC
+        let editingCategoryId = null;
+        window.openEditCategoryModal = (id) => {
+            editingCategoryId = id;
+            const c = categoriesData.find(x => x.id === id);
+            if (!c) return;
+
+            document.getElementById('edit-cat-name').value = c.name;
+            modalContainer.classList.remove('hidden');
+            modalEditCategory.classList.remove('hidden');
+            setTimeout(() => modalEditCategory.classList.remove('scale-95', 'opacity-0'), 10);
+            lucide.createIcons();
+        };
+
+        document.getElementById('btn-save-category').addEventListener('click', async () => {
+            if (!editingCategoryId) return;
+            const name = document.getElementById('edit-cat-name').value;
+            try {
+                await updateDoc(doc(db, 'categories', editingCategoryId), { name });
+                toast("Category node updated", "success");
+                closeModal();
+            } catch (err) { toast(err.message, "error"); }
+        });
+
+        // BAN ACTIONS
+        document.getElementById('md-btn-ban').addEventListener('click', async () => {
+            if (!selectedUserId) return;
+            const u = usersData.find(x => x.uid === selectedUserId);
+            
+            if (u.isBanned) {
+                // Perform Unban
+                try {
+                    await updateDoc(doc(db, 'users', selectedUserId), {
+                        isBanned: false,
+                        accountStatus: 'active',
+                        banReason: '',
+                        banUntil: null
+                    });
+                    toast('Account authorized successfully', 'success');
+                    closeModal();
+                } catch (err) { toast(err.message, 'error'); }
+            } else {
+                // Open Ban Modal
+                const modalBan = document.getElementById('modal-ban');
+                modalBan.classList.remove('hidden');
+            }
+        });
+
+        // WARNING ACTIONS
+        document.getElementById('md-btn-warning').addEventListener('click', () => {
+            document.getElementById('modal-warning').classList.remove('hidden');
+        });
+
+        document.getElementById('confirm-warning-btn').addEventListener('click', async () => {
+            if (!selectedUserId) return;
+            const u = usersData.find(x => x.uid === selectedUserId);
+            const reason = document.getElementById('warning-reason-input').value.trim() || 'No reason provided.';
+            
+            try {
+                const currentWarnings = u.warnings || [];
+                const newWarning = {
+                    date: new Date(),
+                    reason: reason,
+                    adminName: 'Administrator'
+                };
+                
+                const updateData = {
+                    warnings: arrayUnion(newWarning),
+                    warningCount: (u.warningCount || 0) + 1,
+                    accountStatus: 'warning',
+                    warningAcknowledged: false
+                };
+                
+                await updateDoc(doc(db, 'users', selectedUserId), updateData);
+                toast('Warning issued successfully', 'success');
+                document.getElementById('modal-warning').classList.add('hidden');
+                document.getElementById('warning-reason-input').value = '';
+                closeModal();
+            } catch (err) { toast(err.message, 'error'); }
+        });
+
+        document.getElementById('md-btn-reset-warnings').addEventListener('click', async () => {
+            if (!selectedUserId || !confirm("Reset all warnings for this user?")) return;
+            try {
+                await updateDoc(doc(db, 'users', selectedUserId), {
+                    warnings: [],
+                    warningCount: 0,
+                    accountStatus: 'active',
+                    warningAcknowledged: true
+                });
+                toast('Warnings reset successfully', 'success');
+                closeModal();
+            } catch (err) { toast(err.message, 'error'); }
+        });
+
+        document.getElementById('confirm-ban-btn').addEventListener('click', async () => {
+            if (!selectedUserId) return;
+            const reason = document.getElementById('ban-reason-input').value.trim() || 'Violation of service terms.';
+            const banUntil = document.getElementById('ban-until-input').value;
+            try {
+                const updateData = {
+                    isBanned: true,
+                    accountStatus: 'banned',
+                    banReason: reason
+                };
+                if (banUntil) updateData.banUntil = banUntil;
+                await updateDoc(doc(db, 'users', selectedUserId), updateData);
+                toast('Account restricted successfully', 'success');
+                document.getElementById('modal-ban').classList.add('hidden');
+                closeModal();
+            } catch (err) { toast(err.message, 'error'); }
+        });
+
+        // Other modal cancel handlers
+        document.querySelectorAll('.btn-cancel-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.closest('.fixed').classList.add('hidden');
+            });
+        });
+
+        document.getElementById('md-btn-verify').addEventListener('click', async () => {
+             if (!selectedUserId) return;
+             try {
+                await updateDoc(doc(db, 'users', selectedUserId), { emailVerified: true });
+                toast("Email validation forced", "success");
+                closeModal();
+             } catch (err) { toast(err.message, "error"); }
+        });
+
+        document.getElementById('md-btn-delete').addEventListener('click', async () => {
+            if (!confirm("CRITICAL: This will purge all user data from Firestore. Proceed?")) return;
+            try {
+                // Delete user document
+                await deleteDoc(doc(db, 'users', selectedUserId));
+                
+                // Delete bookmarks
+                const bookmarksQuery = query(collection(db, 'bookmarks'), where('userId', '==', selectedUserId));
+                const bookmarksSnapshot = await getDocs(bookmarksQuery);
+                for (const docSnapshot of bookmarksSnapshot.docs) {
+                    await deleteDoc(docSnapshot.ref);
+                }
+
+                toast("Data terminated", "success");
+                closeModal();
+            } catch (err) { toast(err.message, "error"); }
+        });
+
+        // PREMIUM GRANT LOGIC
+        let selectedExpiry = null;
+        document.querySelectorAll('.prem-preset').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.prem-preset').forEach(b => b.classList.remove('bg-yellow-500', 'text-secondary'));
+                btn.classList.add('bg-yellow-500', 'text-secondary');
+                
+                // Clear custom inputs when preset selected
+                document.getElementById('prem-custom-date').value = '';
+                document.getElementById('prem-custom-time').value = '';
+
+                const dur = btn.getAttribute('data-duration');
+                const now = new Date();
+                
+                if (dur === '1h') now.setHours(now.getHours() + 1);
+                else if (dur === '1d') now.setDate(now.getDate() + 1);
+                else if (dur === '7d') now.setDate(now.getDate() + 7);
+                else if (dur === '1mo') now.setMonth(now.getMonth() + 1);
+                else if (dur === '3mo') now.setMonth(now.getMonth() + 3);
+                else if (dur === '6mo') now.setMonth(now.getMonth() + 6);
+                else if (dur === '1y') now.setFullYear(now.getFullYear() + 1);
+                else if (dur === 'inf') { 
+                    selectedExpiry = 'lifetime'; 
+                    document.getElementById('prem-custom-date').value = '';
+                    document.getElementById('prem-custom-time').value = '';
+                    return; 
+                }
+                
+                selectedExpiry = now;
+
+                // Also update custom inputs to show what was selected
+                const dateStr = now.toISOString().split('T')[0];
+                const timeStr = now.toTimeString().split(' ')[0].substring(0, 5);
+                document.getElementById('prem-custom-date').value = dateStr;
+                document.getElementById('prem-custom-time').value = timeStr;
+            });
+        });
+
+        // Clear presets when typing in custom date
+        document.getElementById('prem-custom-date').addEventListener('change', () => {
+            document.querySelectorAll('.prem-preset').forEach(b => b.classList.remove('bg-yellow-500', 'text-secondary'));
+            selectedExpiry = null;
+        });
+
+        document.getElementById('btn-grant-premium').addEventListener('click', async () => {
+            if (!selectedUserId) return;
+            
+            const customDate = document.getElementById('prem-custom-date').value;
+            const customTime = document.getElementById('prem-custom-time').value;
+            
+            let expiry = selectedExpiry;
+            let plan = "Custom";
+
+            if (customDate) {
+                expiry = new Date(`${customDate}T${customTime || '00:00'}`);
+                if (isNaN(expiry.getTime())) {
+                    toast("Invalid custom date/time", "error");
+                    return;
+                }
+            }
+
+            if (expiry === 'lifetime') {
+                await updateDoc(doc(db, 'users', selectedUserId), {
+                    isPremium: true,
+                    premiumPlan: 'Lifetime',
+                    premiumExpiry: null,
+                    premiumStart: serverTimestamp(),
+                    premiumStatus: 'active'
+                });
+            } else if (expiry) {
+                await updateDoc(doc(db, 'users', selectedUserId), {
+                    isPremium: true,
+                    premiumPlan: 'Admin Grant',
+                    premiumExpiry: expiry,
+                    premiumStart: serverTimestamp(),
+                    premiumStatus: 'active'
+                });
+            } else {
+                toast("Specify duration or custom expiry", "error");
+                return;
+            }
+
+            toast("Access elevated", "success");
+            closeModal();
+        });
+
+        // RESOURCE ACTIONS
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('up-title').value;
+            const cat = document.getElementById('up-category').value;
+            const classLevel = document.getElementById('up-class').value;
+            const pdf = document.getElementById('up-pdf').value;
+            const thumb = document.getElementById('up-thumb').value;
+            const desc = document.getElementById('up-desc').value;
+
+            if (!title || !pdf) return toast("Title and PDF are mandatory", "error");
+
+            try {
+                const id = Date.now().toString();
+                await setDoc(doc(db, 'resources', id), {
+                    title,
+                    category: cat,
+                    classLevel,
+                    pdfUrl: pdf,
+                    thumbnailUrl: thumb,
+                    description: desc,
+                    createdAt: serverTimestamp(),
+                    viewCount: 0,
+                    downloadCount: 0
+                });
+                toast("Asset ingested successfully", "success");
+                e.target.reset();
+            } catch (err) { toast(err.message, "error"); }
+        });
+
+        window.deleteResource = async (id) => {
+            if (!confirm("Permanently purge this asset?")) return;
+            try {
+                await deleteDoc(doc(db, 'resources', id));
+                toast("Asset purged", "success");
+            } catch (err) { toast(err.message, "error"); }
+        };
+
+        // CATEGORY ACTIONS
+        document.getElementById('add-cat').addEventListener('click', async () => {
+            const name = document.getElementById('new-cat-name').value;
+            if (!name) return;
+            const id = name.toLowerCase().replace(/\s+/g, '-');
+            try {
+                await setDoc(doc(db, 'categories', id), { name });
+                document.getElementById('new-cat-name').value = '';
+                toast("Category node added", "success");
+            } catch (err) { toast(err.message, "error"); }
+        });
+
+        window.deleteCategory = async (id) => {
+            if (!confirm("Purge category node?")) return;
+            try {
+                await deleteDoc(doc(db, 'categories', id));
+                toast("Category purged", "success");
+            } catch (err) { toast(err.message, "error"); }
+        };
+
+        // ANALYTICS RENDER
+        function renderAnalytics() {
+            const ctx = document.getElementById('retentionChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Day 1', 'Day 7', 'Day 14', 'Day 30'],
+                    datasets: [{
+                        label: 'Retention %',
+                        data: [100, 65, 40, 25],
+                        backgroundColor: '#0ea5e9',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, max: 100 } }
+                }
+            });
+        }
+
+        // SEARCH HANDLERS
+        document.getElementById('user-search').addEventListener('input', updateUsersTable);
+        document.getElementById('res-search').addEventListener('input', updateResourcesList);
+        document.getElementById('refresh-users').addEventListener('click', updateUsersTable);
+
+    </script>
+</body>
+</html>
