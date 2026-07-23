@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { AlertTriangle, Clock, Mail, ShieldAlert, Wrench } from 'lucide-react';
 
 interface ShutdownPageProps {
   status: 'Temporary' | 'Permanent' | 'Maintenance' | string;
@@ -14,30 +15,69 @@ export default function ShutdownPage({ status, title, description, returnDate, c
   const defaultTitle = isMaintenance ? 'Website Under Maintenance' : 'Website Unavailable';
   const defaultDescription = isMaintenance ? 'We are currently performing maintenance.\nPlease check back later.' : 'This website is currently undergoing maintenance. Please check back later.';
 
+  const Icon = isMaintenance ? Wrench : (status === 'Permanent' ? ShieldAlert : AlertTriangle);
+  const iconColor = isMaintenance ? 'text-blue-400' : (status === 'Permanent' ? 'text-red-500' : 'text-yellow-500');
+  const bgColor = isMaintenance ? 'bg-blue-500/10' : (status === 'Permanent' ? 'bg-red-500/10' : 'bg-yellow-500/10');
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background-main p-6 text-center">
-      <div className="max-w-md w-full space-y-6">
-        <div className="text-6xl">{isMaintenance ? '🛠️' : '🚧'}</div>
-        <h1 className="text-3xl font-bold whitespace-pre-line">{title || defaultTitle}</h1>
-        <p className="text-gray-400 whitespace-pre-line">{description || defaultDescription}</p>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-background-main text-text-main p-6 text-center overflow-y-auto">
+      <div className="max-w-md w-full space-y-8 my-8">
+        <div className={`w-24 h-24 mx-auto rounded-3xl ${bgColor} flex items-center justify-center border border-white/5`}>
+          <Icon className={`w-12 h-12 ${iconColor}`} />
+        </div>
         
-        <div className="bg-surface p-6 rounded-2xl border border-white/5 space-y-4 text-left">
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wider">Current Status</p>
-            <p className="font-bold">{isMaintenance ? 'Maintenance Mode' : `${status} Shutdown`}</p>
+        <div className="space-y-4">
+          <h1 className="text-3xl sm:text-4xl font-bold whitespace-pre-line tracking-tight text-white">
+            {title || defaultTitle}
+          </h1>
+          <p className="text-gray-400 whitespace-pre-line text-base sm:text-lg">
+            {description || defaultDescription}
+          </p>
+        </div>
+        
+        <div className="bg-surface/50 backdrop-blur-sm p-6 sm:p-8 rounded-[2rem] border border-white/5 space-y-6 text-left shadow-2xl">
+          <div className="flex items-center gap-4">
+            <div className="p-3.5 bg-black/40 rounded-2xl border border-white/5">
+              <Icon className="w-6 h-6 text-gray-300" />
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Current Status</p>
+              <p className="font-bold text-white text-lg">
+                {isMaintenance ? 'Maintenance Mode' : `${status} Shutdown`}
+              </p>
+            </div>
           </div>
           
           {returnDate && (
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Expected Return</p>
-              <p className="font-bold">{new Date(returnDate).toLocaleDateString()}</p>
+            <div className="flex items-center gap-4 pt-6 border-t border-white/5">
+              <div className="p-3.5 bg-black/40 rounded-2xl border border-white/5">
+                <Clock className="w-6 h-6 text-gray-300" />
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Expected Return</p>
+                <p className="font-bold text-white text-lg">
+                  {new Date(returnDate).toLocaleDateString(undefined, { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </p>
+              </div>
             </div>
           )}
           
           {contactEmail && (
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wider">Support</p>
-              <p className="font-bold">{contactEmail}</p>
+            <div className="flex items-center gap-4 pt-6 border-t border-white/5">
+              <div className="p-3.5 bg-black/40 rounded-2xl border border-white/5">
+                <Mail className="w-6 h-6 text-gray-300" />
+              </div>
+              <div className="overflow-hidden">
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Support Contact</p>
+                <a href={`mailto:${contactEmail}`} className="font-bold text-primary text-lg truncate block hover:underline">
+                  {contactEmail}
+                </a>
+              </div>
             </div>
           )}
         </div>

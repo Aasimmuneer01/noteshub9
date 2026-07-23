@@ -39,21 +39,10 @@ function MainLayout() {
   const { user, loading, verificationBlocked, userData, acceptTerms, acknowledgeWarning, logout } = useAuth();
   const location = useLocation();
   const [showPopup, setShowPopup] = useState(false);
-  const [shutdownSettings, setShutdownSettings] = useState<any>(null);
   
   // Terms check
   const termsAccepted = !!userData?.termsAccepted;
   
-  useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'website_control', 'settings'), (doc) => {
-      if (doc.exists()) {
-        setShutdownSettings(doc.data());
-      }
-    }, (error) => {
-      console.error("Website control listener error:", error);
-    });
-    return unsub;
-  }, []);
 
   const isAdmin = ['admin', 'superadmin'].includes(userData?.role || '');
   
@@ -69,16 +58,6 @@ function MainLayout() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
-  }
-
-  if (shutdownSettings && (shutdownSettings.mode ? shutdownSettings.mode !== 'Online' : !shutdownSettings.enabled) && !isAdmin) {
-    return <ShutdownPage 
-        status={shutdownSettings.mode || 'Temporary'} 
-        title={shutdownSettings.title} 
-        description={shutdownSettings.description}
-        returnDate={shutdownSettings.returnDate}
-        contactEmail={shutdownSettings.contactEmail}
-    />;
   }
 
   if (!user) {
@@ -128,6 +107,46 @@ function MainLayout() {
 }
 
 export default function App() {
+  const [shutdownSettings, setShutdownSettings] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'website_control', 'settings'), (docSnap) => {
+      if (docSnap.exists()) {
+        setShutdownSettings(docSnap.data());
+      } else {
+        setShutdownSettings({ mode: 'Online' });
+      }
+      setLoading(false);
+    }, (error) => {
+      console.error("Website control listener error:", error);
+      setLoading(false);
+    });
+    return unsub;
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background-main flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  const isShutdown = shutdownSettings && (shutdownSettings.mode ? shutdownSettings.mode !== 'Online' : !shutdownSettings.enabled);
+
+  if (isShutdown) {
+    return (
+      <ShutdownPage 
+        status={shutdownSettings.mode || 'Temporary'} 
+        title={shutdownSettings.title} 
+        description={shutdownSettings.description}
+        returnDate={shutdownSettings.returnDate}
+        contactEmail={shutdownSettings.contactEmail}
+      />
+    );
+  }
+
   return (
     <HelmetProvider>
       <AuthProvider>
