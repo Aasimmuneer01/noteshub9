@@ -17,14 +17,67 @@ app.get('/api/test', (req, res) => {
 });
 
 app.get('/api/test-gmail', async (req, res) => {
-  return res.json({
-    clientIdPresent: !!process.env.GMAIL_CLIENT_ID,
-    clientSecretPresent: !!process.env.GMAIL_CLIENT_SECRET,
-    refreshTokenPresent: !!process.env.GMAIL_REFRESH_TOKEN,
-    clientId: process.env.GMAIL_CLIENT_ID,
-    clientSecretLength: process.env.GMAIL_CLIENT_SECRET ? process.env.GMAIL_CLIENT_SECRET.length : 0,
-    refreshTokenLength: process.env.GMAIL_REFRESH_TOKEN ? process.env.GMAIL_REFRESH_TOKEN.length : 0
-  });
+  console.log('GMAIL_CLIENT_ID:', process.env.GMAIL_CLIENT_ID ? 'Present' : 'Missing');
+  console.log('GMAIL_CLIENT_SECRET:', process.env.GMAIL_CLIENT_SECRET ? 'Present' : 'Missing');
+  console.log('GMAIL_REFRESH_TOKEN:', process.env.GMAIL_REFRESH_TOKEN ? 'Present' : 'Missing');
+
+  const missing = [];
+  if (!process.env.GMAIL_CLIENT_ID) missing.push('GMAIL_CLIENT_ID');
+  if (!process.env.GMAIL_CLIENT_SECRET) missing.push('GMAIL_CLIENT_SECRET');
+  if (!process.env.GMAIL_REFRESH_TOKEN) missing.push('GMAIL_REFRESH_TOKEN');
+
+  if (missing.length > 0) {
+    return res.status(500).json({ error: `Missing environment variables: ${missing.join(', ')}` });
+  }
+
+  try {
+    const oAuth2Client = new google.auth.OAuth2(
+      process.env.GMAIL_CLIENT_ID,
+      process.env.GMAIL_CLIENT_SECRET,
+      "http://localhost:3000/oauth2callback"
+    );
+
+    oAuth2Client.setCredentials({
+      refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+    });
+
+    const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
+    
+    const response = await gmail.users.messages.list({
+      userId: 'me',
+      maxResults: 5,
+      q: 'in:inbox',
+    });
+
+    const messages = response.data.messages || [];
+    const emailDetails = [];
+
+    for (const message of messages) {
+      if (!message.id) continue;
+      const msg = await gmail.users.messages.get({
+        userId: 'me',
+        id: message.id,
+        format: 'metadata',
+        metadataHeaders: ['From', 'Subject', 'Date'],
+      });
+
+      const headers = msg.data.payload?.headers || [];
+      const from = headers.find((header: any) => header.name === 'From')?.value;
+      const subject = headers.find((header: any) => header.name === 'Subject')?.value;
+      const date = headers.find((header: any) => header.name === 'Date')?.value;
+
+      emailDetails.push({
+        Sender: from,
+        Subject: subject,
+        Date: date,
+      });
+    }
+
+    res.json(emailDetails);
+  } catch (error: any) {
+    console.error('Error fetching emails:', error);
+    res.status(500).json({ error: 'Failed to authenticate or fetch emails', details: error.message });
+  }
 });
 
 app.post('/api/send-otp', async (req, res) => {
