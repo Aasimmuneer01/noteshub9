@@ -4,7 +4,6 @@ import express from 'express';
 import Groq from 'groq-sdk';
 import { google } from 'googleapis';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const app = express();
 
 app.use(express.json());
@@ -85,7 +84,14 @@ app.post('/api/chat', async (req, res) => {
   const { messages, model } = req.body;
   if (!messages) return res.status(400).json({ error: 'Messages required' });
       
+  if (!process.env.GROQ_API_KEY) {
+      return res.status(500).json({
+          error: "Missing GROQ_API_KEY"
+      });
+  }
+
   try {
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     const chatCompletion = await groq.chat.completions.create({
       messages,
       model: model || 'llama-3.3-70b-versatile',
