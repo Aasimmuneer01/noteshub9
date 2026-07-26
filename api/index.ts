@@ -17,6 +17,19 @@ app.get('/api/test', (req, res) => {
 });
 
 app.get('/api/test-gmail', async (req, res) => {
+  console.log('GMAIL_CLIENT_ID:', process.env.GMAIL_CLIENT_ID ? 'Present' : 'Missing');
+  console.log('GMAIL_CLIENT_SECRET:', process.env.GMAIL_CLIENT_SECRET ? 'Present' : 'Missing');
+  console.log('GMAIL_REFRESH_TOKEN:', process.env.GMAIL_REFRESH_TOKEN ? 'Present' : 'Missing');
+
+  const missing = [];
+  if (!process.env.GMAIL_CLIENT_ID) missing.push('GMAIL_CLIENT_ID');
+  if (!process.env.GMAIL_CLIENT_SECRET) missing.push('GMAIL_CLIENT_SECRET');
+  if (!process.env.GMAIL_REFRESH_TOKEN) missing.push('GMAIL_REFRESH_TOKEN');
+
+  if (missing.length > 0) {
+    return res.status(500).json({ error: `Missing environment variables: ${missing.join(', ')}` });
+  }
+
   try {
     const oAuth2Client = new google.auth.OAuth2(
       process.env.GMAIL_CLIENT_ID,
