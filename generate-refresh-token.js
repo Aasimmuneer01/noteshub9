@@ -18,13 +18,11 @@ async function main() {
 
   const { client_secret, client_id, redirect_uris } = credentials.installed || credentials.web;
 
-  let redirectUri = 'http://localhost:3000';
+  let redirectUri = 'http://localhost:3001';
   if (redirect_uris && redirect_uris.length > 0) {
-    const localhostUri = redirect_uris.find(u => u.startsWith('http://localhost:3000'));
+    const localhostUri = redirect_uris.find(u => u.startsWith('http://localhost:3001'));
     if (localhostUri) {
       redirectUri = localhostUri;
-    } else {
-      redirectUri = redirect_uris[0];
     }
   }
 
@@ -45,9 +43,8 @@ async function main() {
 
   const server = http.createServer(async (req, res) => {
     try {
-      const reqUrl = new URL(req.url, `http://localhost:3000`);
+      const reqUrl = new URL(req.url, `http://localhost:3001`);
       const code = reqUrl.searchParams.get('code');
-
       if (code) {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end('<h1>Authentication successful! You can close this tab.</h1>');
@@ -78,8 +75,19 @@ async function main() {
     }
   });
 
-  server.listen(3000, async () => {
-    console.log(`Server is running on port 3000.`);
+  server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+      console.error('Error: Port 3001 is already in use. Please free up port 3001 to run this script.');
+      process.exit(1);
+    } else {
+      console.error(e);
+      process.exit(1);
+    }
+  });
+
+  server.listen(3001, async () => {
+    console.log(`Server is running on port 3001.`);
+    console.log(`IMPORTANT: Ensure that http://localhost:3001 is added to your OAuth 2.0 Authorized redirect URIs in Google Cloud Console.`);
     console.log(`Opening browser to authorize...`);
     console.log(`If it doesn't open automatically, please click this link:\n\n${authorizeUrl}\n`);
     try {

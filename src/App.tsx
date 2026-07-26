@@ -43,7 +43,6 @@ function MainLayout() {
   // Terms check
   const termsAccepted = !!userData?.termsAccepted;
   
-
   const isAdmin = ['admin', 'superadmin'].includes(userData?.role || '');
   
   useEffect(() => {
@@ -51,7 +50,7 @@ function MainLayout() {
       setShowPopup(true);
     }
   }, [user, userData]);
-
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-background-main flex items-center justify-center">
@@ -59,7 +58,7 @@ function MainLayout() {
       </div>
     );
   }
-
+  
   if (!user) {
     return <AuthScreen />;
   }
