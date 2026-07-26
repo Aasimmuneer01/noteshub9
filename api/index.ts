@@ -75,8 +75,13 @@ app.get('/api/test-gmail', async (req, res) => {
 
     res.json(emailDetails);
   } catch (error: any) {
-    console.error('Error fetching emails:', error);
-    res.status(500).json({ error: 'Failed to authenticate or fetch emails', details: error.message });
+    console.error(error);
+
+    res.status(500).json({
+      message: error.message,
+      response: error.response?.data || null,
+      stack: error.stack,
+    });
   }
 });
 
