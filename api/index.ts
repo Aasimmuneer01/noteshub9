@@ -32,7 +32,7 @@ async function handleReplyEmails(req: any, res: any) {
     const oAuth2Client = new google.auth.OAuth2(
       process.env.GMAIL_CLIENT_ID,
       process.env.GMAIL_CLIENT_SECRET,
-      "http://localhost:3000/oauth2callback"
+      process.env.APP_URL ? `${process.env.APP_URL}/oauth2callback` : "http://localhost:3000/oauth2callback"
     );
 
     oAuth2Client.setCredentials({
