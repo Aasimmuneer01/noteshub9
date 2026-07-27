@@ -122,7 +122,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-app.post('/api/reply-latest-email', async (req, res) => {
+async function handleReplyLatestEmail(req: any, res: any) {
   const missing = [];
   if (!process.env.GMAIL_CLIENT_ID) missing.push('GMAIL_CLIENT_ID');
   if (!process.env.GMAIL_CLIENT_SECRET) missing.push('GMAIL_CLIENT_SECRET');
@@ -268,7 +268,10 @@ app.post('/api/reply-latest-email', async (req, res) => {
       stack: error.stack,
     });
   }
-});
+}
+
+app.post('/api/reply-latest-email', handleReplyLatestEmail);
+app.get('/api/test-reply-latest-email', handleReplyLatestEmail);
 
 app.all('/api/*', (req, res) => {
   res.status(404).json({ error: `API route ${req.method} ${req.url} not found` });
