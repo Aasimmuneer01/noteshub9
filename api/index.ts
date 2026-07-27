@@ -13,6 +13,14 @@ app.use((req, res, next) => {
 });
 
 async function handleReplyEmails(req: any, res: any) {
+  if (req.path === '/api/test-reply-latest-email') {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token || token !== process.env.CRON_SECRET) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+  }
+
   const missing = [];
   if (!process.env.GMAIL_CLIENT_ID) missing.push('GMAIL_CLIENT_ID');
   if (!process.env.GMAIL_CLIENT_SECRET) missing.push('GMAIL_CLIENT_SECRET');
