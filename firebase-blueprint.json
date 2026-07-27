@@ -26,6 +26,29 @@
         "views": { "type": "number" }
       },
       "required": ["title", "url"]
+    },
+    "Analytics": {
+      "title": "Analytics",
+      "description": "System analytics for AI support",
+      "type": "object",
+      "properties": {
+        "totalEmailsReceived": { "type": "number" },
+        "totalAIRepliesSent": { "type": "number" },
+        "failedReplies": { "type": "number" },
+        "lastReceivedEmail": { "type": "string", "format": "date-time" },
+        "lastReplyTime": { "type": "string", "format": "date-time" }
+      }
+    },
+    "EmailLog": {
+      "title": "EmailLog",
+      "description": "Log of email processing",
+      "type": "object",
+      "properties": {
+        "emailId": { "type": "string" },
+        "status": { "type": "string", "enum": ["success", "failed", "pending"] },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "error": { "type": "string" }
+      }
     }
   },
   "firestore": {
@@ -36,6 +59,14 @@
     "resources/{resourceId}": {
       "schema": "Resource",
       "description": "Resource documents"
+    },
+    "analytics/summary": {
+      "schema": "Analytics",
+      "description": "System analytics summary"
+    },
+    "emailLogs/{logId}": {
+      "schema": "EmailLog",
+      "description": "Individual email processing logs"
     }
   }
 }

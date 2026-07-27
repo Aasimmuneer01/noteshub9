@@ -524,6 +524,38 @@
                 
                 <!-- Analytics Content -->
                 <section id="analytics" class="tab-content space-y-10">
+                     <!-- AI Support Analytics -->
+                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl">
+                            <h3 class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Total Emails</h3>
+                            <p id="stat-total-emails" class="text-4xl font-black font-mono">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl">
+                            <h3 class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">AI Replies</h3>
+                            <p id="stat-total-replies" class="text-4xl font-black font-mono text-green-500">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl">
+                            <h3 class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Failed</h3>
+                            <p id="stat-failed-replies" class="text-4xl font-black font-mono text-red-500">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl">
+                            <h3 class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Pending</h3>
+                            <p id="stat-pending-emails" class="text-4xl font-black font-mono text-yellow-500">0</p>
+                        </div>
+                     </div>
+                     <div class="bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                         <h3 class="text-xl font-bold uppercase tracking-tight mb-4">Recent Activity Log</h3>
+                         <div id="activity-log" class="space-y-4 text-sm font-mono text-gray-300">
+                             <!-- Logs -->
+                         </div>
+                     </div>
+                     <div class="bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl mt-8">
+                         <h3 class="text-xl font-bold uppercase tracking-tight mb-4">Emails Awaiting Human Review</h3>
+                         <div id="pending-reviews" class="space-y-4 text-sm font-mono text-gray-300">
+                             <!-- Pending Reviews -->
+                         </div>
+                     </div>
+                     
                      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div class="bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
                              <h3 class="text-xl font-bold uppercase tracking-tight mb-8">Geographic Distribution</h3>
@@ -862,6 +894,51 @@
             loadCreatorData();
             loadWebsiteControl();
             loadAiConfig();
+            loadAiSupportAnalytics();
+        }
+
+        async function loadAiSupportAnalytics() {
+            // Summary stats
+            onSnapshot(doc(db, 'analytics', 'summary'), (doc) => {
+                const data = doc.data() || {};
+                document.getElementById('stat-total-emails').innerText = data.totalEmailsReceived || 0;
+                document.getElementById('stat-total-replies').innerText = data.totalAIRepliesSent || 0;
+                document.getElementById('stat-failed-replies').innerText = data.failedReplies || 0;
+            });
+
+            // Recent activity
+            const logsQuery = query(collection(db, 'emailLogs'), orderBy('timestamp', 'desc'), limit(10));
+            onSnapshot(logsQuery, (snapshot) => {
+                const logsDiv = document.getElementById('activity-log');
+                logsDiv.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const log = doc.data();
+                    const logEl = document.createElement('div');
+                    logEl.className = 'flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5';
+                    logEl.innerHTML = `
+                        <span class="font-bold text-xs">${log.emailId.substring(0,20)}...</span>
+                        <span class="text-xs ${log.status === 'success' ? 'text-green-500' : 'text-red-500'}">${log.status.toUpperCase()}</span>
+                    `;
+                    logsDiv.appendChild(logEl);
+                });
+            });
+
+            // Pending reviews
+            const pendingQuery = query(collection(db, 'pendingReviews'), orderBy('timestamp', 'desc'), limit(10));
+            onSnapshot(pendingQuery, (snapshot) => {
+                const pendingDiv = document.getElementById('pending-reviews');
+                pendingDiv.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const review = doc.data();
+                    const reviewEl = document.createElement('div');
+                    reviewEl.className = 'flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/5';
+                    reviewEl.innerHTML = `
+                        <span class="font-bold text-xs">${review.emailId.substring(0,20)}...</span>
+                        <span class="text-xs text-yellow-500">${review.reason || 'Pending Review'}</span>
+                    `;
+                    pendingDiv.appendChild(reviewEl);
+                });
+            });
         }
 
         async function loadAiConfig() {

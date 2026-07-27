@@ -17,6 +17,7 @@ import Bookmarks from './pages/Bookmarks';
 import Folders from './pages/Folders';
 import OfflineLibrary from './pages/OfflineLibrary';
 import AIAssistant from './pages/AIAssistant';
+import AdminPage from './pages/Admin';
 import Profile from './pages/Profile';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import AuthScreen from './components/AuthScreen';
@@ -87,6 +88,7 @@ function MainLayout() {
           <Route path="/folders" element={<Folders />} />
           <Route path="/offline" element={<OfflineLibrary />} />
           <Route path="/ai-assistant" element={<AIAssistant />} />
+          {isAdmin && <Route path="/admin" element={<AdminPage />} />}
           <Route path="/profile" element={<Profile />} />
           <Route path="/viewer/:resourceId" element={<PDFViewer />} />
           <Route path="/terms" element={<TermsOfUse />} />

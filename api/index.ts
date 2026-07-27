@@ -3,6 +3,7 @@ dotenv.config();
 import express from 'express';
 import Groq from 'groq-sdk';
 import { google } from 'googleapis';
+import { updateAnalytics, logEmail, logPendingReview } from './analytics.js';
 
 const app = express();
 
@@ -64,6 +65,7 @@ async function handleReplyEmails(req: any, res: any) {
     for (const msg of messages) {
       if (!msg.id) continue;
       checked++;
+      await updateAnalytics('received');
 
       try {
         const fullMsg = await gmail.users.messages.get({
@@ -136,7 +138,7 @@ async function handleReplyEmails(req: any, res: any) {
           messages: [
             {
               role: "system",
-              content: `You are the official AI customer support assistant for NotesHub9.
+                          content: `You are the official AI customer support assistant for NotesHub9.
 
 Website:
 https://noteshub9.vercel.app
@@ -144,47 +146,52 @@ https://noteshub9.vercel.app
 About:
 NotesHub9 is a free educational platform for students.
 
-Main Features:
+Features:
 
 - Study Notes
 - PDF Downloads
-- Class-wise Resources
 - JKBOSE Resources
 - NCERT Resources
-- Educational Materials
-- Previous Papers
+- Previous Year Papers
 - Important Questions
-- Learning Resources
+- Class-wise Resources
+- Educational Materials
 
-Your Responsibilities:
+The AI should be able to answer questions about:
 
-- Help users use the website.
-- Answer questions about NotesHub9.
-- Help users with download problems.
-- Help users find notes.
-- Help users report bugs.
-- Explain website features.
-- Be polite and professional.
+- Website usage
+- Download problems
+- Missing notes
+- Broken links
+- Bug reports
+- Feature requests
+- User feedback
 
-Important Rules:
+Rules:
 
-Never invent information.
+- Always be polite.
+- Never invent information.
+- Never guess.
+- If the information is unknown, reply:
 
-If the information is unavailable, clearly say:
+"I don't currently have that information. Your request has been forwarded to the NotesHub9 Team."
 
-"I don't currently have that information. Your message has been forwarded to the NotesHub9 team."
+If the website is reported as down, reply:
 
-If the website is down, reply:
+"Thank you for informing us. Our team has been notified and is working to restore the service as quickly as possible."
 
-"Thank you for reporting the issue. Our team has been informed and is working to restore the website as quickly as possible."
+Never tell users to check social media unless explicitly instructed.
 
-Do not tell users to check social media unless explicitly instructed.
-
-Always sign emails with:
+Always sign replies:
 
 Best regards,
 
-NotesHub9 AI Support`
+NotesHub9 AI Support
+
+IMPORTANT: Provide your response in the following format:
+Reply:
+[Your reply body here]
+Confidence: [Confidence Score 0-10]`
             },
             {
               role: "user",
@@ -194,7 +201,24 @@ NotesHub9 AI Support`
           model: 'llama-3.3-70b-versatile',
         });
         
-        const replyBody = chatCompletion.choices[0]?.message?.content || 'Thank you for reaching out.';
+        const replyContent = chatCompletion.choices[0]?.message?.content || '';
+        const confidenceMatch = replyContent.match(/Confidence:\s*(\d+)/i);
+        const confidence = confidenceMatch ? parseInt(confidenceMatch[1], 10) : 0;
+        const replyBodyMatch = replyContent.match(/Reply:\s*([\s\S]*?)Confidence:/i);
+        let replyBody = replyBodyMatch ? replyBodyMatch[1].trim() : replyContent;
+
+        if (confidence <= 7) {
+            replyBody = `Thank you for contacting NotesHub9.
+
+Your request requires manual review by our support team.
+
+We have forwarded your message to the NotesHub9 Team and they will respond as soon as possible.
+
+Best regards,
+
+NotesHub9 AI Support`;
+            await logPendingReview(msg.id, `Confidence: ${confidence}`);
+        }
 
         const subject = subjectHeader.toLowerCase().startsWith('re:') ? subjectHeader : `Re: ${subjectHeader}`;
         const to = fromHeader;
@@ -226,9 +250,13 @@ NotesHub9 AI Support`
         });
 
         replied++;
+        await updateAnalytics('replied');
+        await logEmail(msg.id, 'success');
       } catch (err) {
         console.error('Error processing message:', err);
         errors++;
+        await updateAnalytics('failed');
+        await logEmail(msg.id, 'failed', err instanceof Error ? err.message : String(err));
       }
     }
 

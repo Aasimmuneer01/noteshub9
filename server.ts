@@ -4,6 +4,9 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import apiApp from './api/index.js';
+import * as admin from 'firebase-admin';
+
+admin.initializeApp();
 
 const app = express();
 const PORT = 3000;
