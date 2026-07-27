@@ -4,5 +4,11 @@
       "source": "/api/(.*)",
       "destination": "/api/index"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/reply-emails",
+      "schedule": "* * * * *"
+    }
   ]
 }

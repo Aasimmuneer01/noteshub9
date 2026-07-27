@@ -12,117 +12,7 @@ app.use((req, res, next) => {
     next();
 });
 
-app.get('/api/test', (req, res) => {
-  res.json({ status: 'ok', message: 'Routing is working' });
-});
-
-app.get('/api/test-gmail', async (req, res) => {
-  console.log('GMAIL_CLIENT_ID:', process.env.GMAIL_CLIENT_ID ? 'Present' : 'Missing');
-  console.log('GMAIL_CLIENT_SECRET:', process.env.GMAIL_CLIENT_SECRET ? 'Present' : 'Missing');
-  console.log('GMAIL_REFRESH_TOKEN:', process.env.GMAIL_REFRESH_TOKEN ? 'Present' : 'Missing');
-
-  const missing = [];
-  if (!process.env.GMAIL_CLIENT_ID) missing.push('GMAIL_CLIENT_ID');
-  if (!process.env.GMAIL_CLIENT_SECRET) missing.push('GMAIL_CLIENT_SECRET');
-  if (!process.env.GMAIL_REFRESH_TOKEN) missing.push('GMAIL_REFRESH_TOKEN');
-
-  if (missing.length > 0) {
-    return res.status(500).json({ error: `Missing environment variables: ${missing.join(', ')}` });
-  }
-
-  try {
-    const oAuth2Client = new google.auth.OAuth2(
-      process.env.GMAIL_CLIENT_ID,
-      process.env.GMAIL_CLIENT_SECRET,
-      "http://localhost:3000/oauth2callback"
-    );
-
-    oAuth2Client.setCredentials({
-      refresh_token: process.env.GMAIL_REFRESH_TOKEN,
-    });
-
-    const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
-    
-    const response = await gmail.users.messages.list({
-      userId: 'me',
-      maxResults: 5,
-      q: 'in:inbox',
-    });
-
-    const messages = response.data.messages || [];
-    const emailDetails = [];
-
-    for (const message of messages) {
-      if (!message.id) continue;
-      const msg = await gmail.users.messages.get({
-        userId: 'me',
-        id: message.id,
-        format: 'metadata',
-        metadataHeaders: ['From', 'Subject', 'Date'],
-      });
-
-      const headers = msg.data.payload?.headers || [];
-      const from = headers.find((header: any) => header.name === 'From')?.value;
-      const subject = headers.find((header: any) => header.name === 'Subject')?.value;
-      const date = headers.find((header: any) => header.name === 'Date')?.value;
-
-      emailDetails.push({
-        Sender: from,
-        Subject: subject,
-        Date: date,
-      });
-    }
-
-    res.json(emailDetails);
-  } catch (error: any) {
-    console.error(error);
-
-    res.status(500).json({
-      message: error.message,
-      response: error.response?.data || null,
-      stack: error.stack,
-    });
-  }
-});
-
-app.post('/api/send-otp', async (req, res) => {
-  const { email, code } = req.body;
-  if (!email || !code) {
-    return res.status(400).json({ error: 'Email and code are required' });
-  }
-      
-  console.log('------------------------------------------');
-  console.log('📧 SIMULATED EMAIL SENT TO:', email);
-  console.log('OTP CODE:', code);
-  console.log('------------------------------------------');
-    
-  res.json({ success: true, message: 'OTP sent successfully (Simulated)' });
-});
-
-app.post('/api/chat', async (req, res) => {
-  const { messages, model } = req.body;
-  if (!messages) return res.status(400).json({ error: 'Messages required' });
-      
-  if (!process.env.GROQ_API_KEY) {
-      return res.status(500).json({
-          error: "Missing GROQ_API_KEY"
-      });
-  }
-
-  try {
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const chatCompletion = await groq.chat.completions.create({
-      messages,
-      model: model || 'llama-3.3-70b-versatile',
-    });
-    res.json(chatCompletion.choices[0].message);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to chat' });
-  }
-});
-
-async function handleReplyLatestEmail(req: any, res: any) {
+async function handleReplyEmails(req: any, res: any) {
   const missing = [];
   if (!process.env.GMAIL_CLIENT_ID) missing.push('GMAIL_CLIENT_ID');
   if (!process.env.GMAIL_CLIENT_SECRET) missing.push('GMAIL_CLIENT_SECRET');
@@ -133,6 +23,11 @@ async function handleReplyLatestEmail(req: any, res: any) {
     return res.status(500).json({ error: `Missing environment variables: ${missing.join(', ')}` });
   }
 
+  let checked = 0;
+  let replied = 0;
+  let skipped = 0;
+  let errors = 0;
+
   try {
     const oAuth2Client = new google.auth.OAuth2(
       process.env.GMAIL_CLIENT_ID,
@@ -146,6 +41,9 @@ async function handleReplyLatestEmail(req: any, res: any) {
 
     const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
     
+    const profileRes = await gmail.users.getProfile({ userId: 'me' });
+    const myEmail = profileRes.data.emailAddress?.toLowerCase() || '';
+
     const response = await gmail.users.messages.list({
       userId: 'me',
       maxResults: 20,
@@ -153,114 +51,140 @@ async function handleReplyLatestEmail(req: any, res: any) {
     });
 
     const messages = response.data.messages || [];
-    let targetMessageData = null;
-    
-    const ignoredSenders = ['noreply', 'no-reply', 'google', 'github', 'firebase', 'newsletters', 'newsletter', 'automated'];
+    const ignoredSenders = ['noreply', 'no-reply', 'google', 'github', 'firebase', 'newsletters', 'newsletter', 'automated', 'promotional'];
 
     for (const msg of messages) {
       if (!msg.id) continue;
-      const fullMsg = await gmail.users.messages.get({
-        userId: 'me',
-        id: msg.id,
-        format: 'full',
-      });
-      
-      const headers = fullMsg.data.payload?.headers || [];
-      const fromHeader = headers.find((h) => h.name?.toLowerCase() === 'from')?.value || '';
-      
-      const fromLower = fromHeader.toLowerCase();
-      const isIgnored = ignoredSenders.some(ignored => fromLower.includes(ignored));
-      if (isIgnored) continue;
-      
-      targetMessageData = fullMsg.data;
-      break;
-    }
+      checked++;
 
-    if (!targetMessageData) {
-      return res.json({ message: "No unread customer emails." });
-    }
-
-    const headers = targetMessageData.payload?.headers || [];
-    const fromHeader = headers.find((h: any) => h.name?.toLowerCase() === 'from')?.value || '';
-    const subjectHeader = headers.find((h: any) => h.name?.toLowerCase() === 'subject')?.value || '';
-    const messageIdHeader = headers.find((h: any) => h.name?.toLowerCase() === 'message-id')?.value || '';
-    const referencesHeader = headers.find((h: any) => h.name?.toLowerCase() === 'references')?.value || '';
-
-    let plainTextBody = '';
-    const getPlainText = (payload: any) => {
-      if (!payload) return;
-      if (payload.mimeType === 'text/plain' && payload.body?.data) {
-        plainTextBody += Buffer.from(payload.body.data, 'base64').toString('utf-8');
-      } else if (payload.parts) {
-        for (const part of payload.parts) {
-          getPlainText(part);
+      try {
+        const fullMsg = await gmail.users.messages.get({
+          userId: 'me',
+          id: msg.id,
+          format: 'full',
+        });
+        
+        const headers = fullMsg.data.payload?.headers || [];
+        const fromHeader = headers.find((h) => h.name?.toLowerCase() === 'from')?.value || '';
+        const fromLower = fromHeader.toLowerCase();
+        
+        const isIgnored = ignoredSenders.some(ignored => fromLower.includes(ignored));
+        if (isIgnored) {
+          skipped++;
+          continue;
         }
+
+        // Check if we already replied by looking at the thread
+        const threadId = fullMsg.data.threadId;
+        if (threadId) {
+          const threadRes = await gmail.users.threads.get({
+            userId: 'me',
+            id: threadId,
+            format: 'metadata',
+            metadataHeaders: ['From', 'Message-ID', 'In-Reply-To']
+          });
+          
+          const threadMessages = threadRes.data.messages || [];
+          const customerMsgIndex = threadMessages.findIndex(m => m.id === msg.id);
+          
+          let alreadyReplied = false;
+          if (customerMsgIndex !== -1) {
+            for (let i = customerMsgIndex + 1; i < threadMessages.length; i++) {
+              const replyMsg = threadMessages[i];
+              const replyHeaders = replyMsg.payload?.headers || [];
+              const replyFrom = replyHeaders.find(h => h.name?.toLowerCase() === 'from')?.value || '';
+              if (replyFrom.toLowerCase().includes(myEmail)) {
+                alreadyReplied = true;
+                break;
+              }
+            }
+          }
+          
+          if (alreadyReplied) {
+            skipped++;
+            continue;
+          }
+        }
+
+        const subjectHeader = headers.find((h: any) => h.name?.toLowerCase() === 'subject')?.value || '';
+        const messageIdHeader = headers.find((h: any) => h.name?.toLowerCase() === 'message-id')?.value || '';
+        const referencesHeader = headers.find((h: any) => h.name?.toLowerCase() === 'references')?.value || '';
+
+        let plainTextBody = '';
+        const getPlainText = (payload: any) => {
+          if (!payload) return;
+          if (payload.mimeType === 'text/plain' && payload.body?.data) {
+            plainTextBody += Buffer.from(payload.body.data, 'base64').toString('utf-8');
+          } else if (payload.parts) {
+            for (const part of payload.parts) {
+              getPlainText(part);
+            }
+          }
+        };
+        getPlainText(fullMsg.data.payload);
+
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const chatCompletion = await groq.chat.completions.create({
+          messages: [
+            {
+              role: "system",
+              content: "You are the official AI support assistant for NotesHub9. Reply professionally, clearly, and helpfully. Do not invent information. If you don't know something, politely say so."
+            },
+            {
+              role: "user",
+              content: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`
+            }
+          ],
+          model: 'llama-3.3-70b-versatile',
+        });
+        
+        const replyBody = chatCompletion.choices[0]?.message?.content || 'Thank you for reaching out.';
+
+        const subject = subjectHeader.toLowerCase().startsWith('re:') ? subjectHeader : `Re: ${subjectHeader}`;
+        const to = fromHeader;
+
+        const emailLines = [];
+        emailLines.push(`To: ${to}`);
+        emailLines.push(`Subject: ${subject}`);
+        if (messageIdHeader) {
+          emailLines.push(`In-Reply-To: ${messageIdHeader}`);
+          if (referencesHeader) {
+            emailLines.push(`References: ${referencesHeader} ${messageIdHeader}`);
+          } else {
+            emailLines.push(`References: ${messageIdHeader}`);
+          }
+        }
+        emailLines.push('Content-Type: text/plain; charset="UTF-8"');
+        emailLines.push('');
+        emailLines.push(replyBody);
+
+        const emailRaw = emailLines.join('\r\n');
+        const base64EncodedEmail = Buffer.from(emailRaw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        await gmail.users.messages.send({
+          userId: 'me',
+          requestBody: {
+            raw: base64EncodedEmail,
+            threadId: threadId,
+          },
+        });
+
+        replied++;
+      } catch (err) {
+        console.error('Error processing message:', err);
+        errors++;
       }
-    };
-    getPlainText(targetMessageData.payload);
+    }
 
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const chatCompletion = await groq.chat.completions.create({
-      messages: [
-        {
-          role: "system",
-          content: "You are the official AI support assistant for NotesHub9. Reply professionally, clearly, and helpfully. Do not invent information. If you don't know something, politely say so."
-        },
-        {
-          role: "user",
-          content: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`
-        }
-      ],
-      model: 'llama-3.3-70b-versatile',
-    });
-    
-    const replyBody = chatCompletion.choices[0]?.message?.content || 'Thank you for reaching out.';
-
-    const subject = subjectHeader.toLowerCase().startsWith('re:') ? subjectHeader : `Re: ${subjectHeader}`;
-    const to = fromHeader;
-    const threadId = targetMessageData.threadId;
-
-    const emailLines = [];
-    emailLines.push(`To: ${to}`);
-    emailLines.push(`Subject: ${subject}`);
-    if (messageIdHeader) {
-      emailLines.push(`In-Reply-To: ${messageIdHeader}`);
-      if (referencesHeader) {
-        emailLines.push(`References: ${referencesHeader} ${messageIdHeader}`);
+    if (req.path === '/api/reply-latest-email' || req.path === '/api/test-reply-latest-email') {
+      if (replied > 0) {
+        return res.json({ success: true, replySent: true, checked, skipped, errors });
       } else {
-        emailLines.push(`References: ${messageIdHeader}`);
+        return res.json({ message: "No unread customer emails.", checked, skipped, errors });
       }
+    } else {
+      return res.json({ checked, replied, skipped, errors });
     }
-    emailLines.push('Content-Type: text/plain; charset="UTF-8"');
-    emailLines.push('');
-    emailLines.push(replyBody);
-
-    const email = emailLines.join('\r\n');
-    const base64EncodedEmail = Buffer.from(email).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: {
-        raw: base64EncodedEmail,
-        threadId: threadId,
-      },
-    });
-
-    // TODO: Marking emails as read can be re-enabled later after regenerating the OAuth token with the "gmail.modify" scope.
-    /*
-    await gmail.users.messages.modify({
-      userId: 'me',
-      id: targetMessageData.id!,
-      requestBody: {
-        removeLabelIds: ['UNREAD'],
-      },
-    });
-    */
-
-    res.json({
-      success: true,
-      replySent: true
-    });
   } catch (error: any) {
     console.error(error);
     res.status(500).json({
@@ -271,8 +195,9 @@ async function handleReplyLatestEmail(req: any, res: any) {
   }
 }
 
-app.post('/api/reply-latest-email', handleReplyLatestEmail);
-app.get('/api/test-reply-latest-email', handleReplyLatestEmail);
+app.get('/api/cron/reply-emails', handleReplyEmails);
+app.post('/api/reply-latest-email', handleReplyEmails);
+app.get('/api/test-reply-latest-email', handleReplyEmails);
 
 app.all('/api/*', (req, res) => {
   res.status(404).json({ error: `API route ${req.method} ${req.url} not found` });

@@ -133,5 +133,9 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    match /processed_emails/{messageId} {
+      allow read, write: if true;
+    }
   }
 }
