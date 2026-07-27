@@ -1,4 +1,4 @@
-import * as admin from 'firebase-admin';
+import admin from 'firebase-admin';
 
 const db = admin.firestore();
 const ANALYTICS_REF = db.collection('analytics').doc('summary');
