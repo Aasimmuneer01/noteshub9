@@ -246,6 +246,8 @@ async function handleReplyLatestEmail(req: any, res: any) {
       },
     });
 
+    // TODO: Marking emails as read can be re-enabled later after regenerating the OAuth token with the "gmail.modify" scope.
+    /*
     await gmail.users.messages.modify({
       userId: 'me',
       id: targetMessageData.id!,
@@ -253,11 +255,10 @@ async function handleReplyLatestEmail(req: any, res: any) {
         removeLabelIds: ['UNREAD'],
       },
     });
+    */
 
     res.json({
       success: true,
-      recipient: to,
-      subject: subject,
       replySent: true
     });
   } catch (error: any) {
