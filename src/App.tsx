@@ -17,6 +17,7 @@ import Bookmarks from './pages/Bookmarks';
 import Folders from './pages/Folders';
 import OfflineLibrary from './pages/OfflineLibrary';
 import AIAssistant from './pages/AIAssistant';
+import AIChatHistory from './pages/AIChatHistory';
 import AdminPage from './pages/Admin';
 import Profile from './pages/Profile';
 import { AuthProvider, useAuth } from './hooks/useAuth';
@@ -80,7 +81,7 @@ function MainLayout() {
     <div className="min-h-screen bg-background-main text-text-main flex flex-col">
       {showPopup && <NewFeaturePopup version="1.0" onClose={() => setShowPopup(false)} />}
       <Navbar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pt-16">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/resources" element={<Resources />} />
@@ -88,6 +89,7 @@ function MainLayout() {
           <Route path="/folders" element={<Folders />} />
           <Route path="/offline" element={<OfflineLibrary />} />
           <Route path="/ai-assistant" element={<AIAssistant />} />
+          <Route path="/ai-history" element={<AIChatHistory />} />
           {isAdmin && <Route path="/admin" element={<AdminPage />} />}
           <Route path="/profile" element={<Profile />} />
           <Route path="/viewer/:resourceId" element={<PDFViewer />} />

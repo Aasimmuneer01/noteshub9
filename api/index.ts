@@ -3,6 +3,7 @@ dotenv.config();
 import express from 'express';
 import Groq from 'groq-sdk';
 import { google } from 'googleapis';
+import { updateAnalytics, logEmail, logPendingReview } from './analytics.js';
 
 const app = express();
 
@@ -64,6 +65,7 @@ async function handleReplyEmails(req: any, res: any) {
     for (const msg of messages) {
       if (!msg.id) continue;
       checked++;
+      await updateAnalytics('received');
 
       try {
         const fullMsg = await gmail.users.messages.get({
@@ -215,6 +217,7 @@ We have forwarded your message to the NotesHub9 Team and they will respond as so
 Best regards,
 
 NotesHub9 AI Support`;
+            await logPendingReview(msg.id, `Confidence: ${confidence}`);
         }
 
         const subject = subjectHeader.toLowerCase().startsWith('re:') ? subjectHeader : `Re: ${subjectHeader}`;
@@ -247,9 +250,13 @@ NotesHub9 AI Support`;
         });
 
         replied++;
+        await updateAnalytics('replied');
+        await logEmail(msg.id, 'success');
       } catch (err) {
         console.error('Error processing message:', err);
         errors++;
+        await updateAnalytics('failed');
+        await logEmail(msg.id, 'failed', err instanceof Error ? err.message : String(err));
       }
     }
 
@@ -271,6 +278,29 @@ NotesHub9 AI Support`;
     });
   }
 }
+
+app.post('/api/chat', async (req, res) => {
+    try {
+        const { messages } = req.body;
+        if (!process.env.GROQ_API_KEY) {
+            return res.status(500).json({ error: "GROQ_API_KEY not configured" });
+        }
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                { role: "system", content: "You are a helpful AI assistant for NotesHub9." },
+                ...messages
+            ],
+            model: 'llama-3.3-70b-versatile',
+        });
+        
+        const content = chatCompletion.choices[0]?.message?.content || 'No response';
+        res.json({ content });
+    } catch (err) {
+        console.error('Error in chat:', err);
+        res.status(500).json({ error: 'Failed to get AI response' });
+    }
+});
 
 app.get('/api/cron/reply-emails', handleReplyEmails);
 app.post('/api/reply-latest-email', handleReplyEmails);

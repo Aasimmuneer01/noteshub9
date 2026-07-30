@@ -525,7 +525,7 @@
                 <!-- Analytics Content -->
                 <section id="analytics" class="tab-content space-y-10">
                      <!-- AI Support Analytics -->
-                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
                         <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl">
                             <h3 class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Total Emails</h3>
                             <p id="stat-total-emails" class="text-4xl font-black font-mono">0</p>
@@ -541,6 +541,14 @@
                         <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl">
                             <h3 class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Pending</h3>
                             <p id="stat-pending-emails" class="text-4xl font-black font-mono text-yellow-500">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl">
+                            <h3 class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Last Email</h3>
+                            <p id="stat-last-email" class="text-xl font-bold font-mono truncate">No emails yet</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl">
+                            <h3 class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Last AI Reply</h3>
+                            <p id="stat-last-reply" class="text-xl font-bold font-mono truncate">No activity</p>
                         </div>
                      </div>
                      <div class="bg-surface p-8 rounded-[2.5rem] border border-white/5 shadow-2xl">
@@ -904,6 +912,13 @@
                 document.getElementById('stat-total-emails').innerText = data.totalEmailsReceived || 0;
                 document.getElementById('stat-total-replies').innerText = data.totalAIRepliesSent || 0;
                 document.getElementById('stat-failed-replies').innerText = data.failedReplies || 0;
+                document.getElementById('stat-last-email').innerText = data.lastReceivedEmail ? new Date(data.lastReceivedEmail).toLocaleTimeString() : 'No emails yet';
+                document.getElementById('stat-last-reply').innerText = data.lastAIReplyTime ? new Date(data.lastAIReplyTime).toLocaleTimeString() : 'No activity';
+            });
+
+            // Pending reviews count
+            onSnapshot(collection(db, 'pendingReviews'), (snapshot) => {
+                document.getElementById('stat-pending-emails').innerText = snapshot.size;
             });
 
             // Recent activity
@@ -911,6 +926,10 @@
             onSnapshot(logsQuery, (snapshot) => {
                 const logsDiv = document.getElementById('activity-log');
                 logsDiv.innerHTML = '';
+                if (snapshot.empty) {
+                    logsDiv.innerHTML = '<p class="text-xs text-gray-500">No activity</p>';
+                    return;
+                }
                 snapshot.forEach(doc => {
                     const log = doc.data();
                     const logEl = document.createElement('div');
@@ -928,6 +947,10 @@
             onSnapshot(pendingQuery, (snapshot) => {
                 const pendingDiv = document.getElementById('pending-reviews');
                 pendingDiv.innerHTML = '';
+                if (snapshot.empty) {
+                    pendingDiv.innerHTML = '<p class="text-xs text-gray-500">No emails awaiting review</p>';
+                    return;
+                }
                 snapshot.forEach(doc => {
                     const review = doc.data();
                     const reviewEl = document.createElement('div');
@@ -1856,10 +1879,43 @@
             });
         }
 
-        // SEARCH HANDLERS
+        // AI Management
+        async function loadAiStatus() {
+            try {
+                const docSnap = await getDoc(doc(db, 'ai_settings', 'status'));
+                if (docSnap.exists()) {
+                    const enabled = docSnap.data().enabled;
+                    const btn = document.getElementById('toggle-ai-enabled');
+                    btn.textContent = enabled ? 'Disable' : 'Enable';
+                    btn.className = `px-4 py-2 ${enabled ? 'bg-red-500' : 'bg-green-500'} text-white rounded-lg font-bold`;
+                }
+            } catch (e) {
+                console.error('Load AI status error:', e);
+            }
+        }
+
+        document.getElementById('toggle-ai-enabled').addEventListener('click', async () => {
+            try {
+                const docRef = doc(db, 'ai_settings', 'status');
+                const docSnap = await getDoc(docRef);
+                const currentEnabled = docSnap.exists() ? docSnap.data().enabled : true;
+                const newEnabled = !currentEnabled;
+                
+                await setDoc(docRef, { enabled: newEnabled });
+                loadAiStatus();
+                toast(`AI Assistant ${newEnabled ? 'enabled' : 'disabled'}`, 'success');
+            } catch (e) {
+                console.error('Toggle AI error:', e);
+                toast('Failed to toggle AI: ' + e.message, 'error');
+            }
+        });
+
+        // Search Handlers
         document.getElementById('user-search').addEventListener('input', updateUsersTable);
         document.getElementById('res-search').addEventListener('input', updateResourcesList);
         document.getElementById('refresh-users').addEventListener('click', updateUsersTable);
+        
+        loadAiStatus();
 
     </script>
 </body>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { UsersManager } from './Admin/UsersManager';
+import { AIManager } from './Admin/AIManager';
 
 export function AdminDashboard() {
   const [analytics, setAnalytics] = useState<any>(null);
@@ -70,8 +71,9 @@ export function AdminDashboard() {
       )}
 
       {activeTab === 'users' && <UsersManager />}
+      {activeTab === 'ai' && <AIManager />}
 
-      {activeTab !== 'dashboard' && activeTab !== 'users' && (
+      {activeTab !== 'dashboard' && activeTab !== 'users' && activeTab !== 'ai' && (
           <div className="p-8 text-center text-gray-500">Feature '{activeTab}' coming soon.</div>
       )}
     </div>

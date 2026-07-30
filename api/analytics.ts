@@ -1,26 +1,39 @@
-import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
 
-const db = admin.firestore();
-const ANALYTICS_REF = db.collection('analytics').doc('summary');
+let db: any;
+
+function getDb() {
+    if (!db) {
+        db = getFirestore();
+    }
+    return db;
+}
 
 export async function updateAnalytics(type: 'received' | 'replied' | 'failed') {
+    const docRef = getDb().collection('analytics').doc('summary');
+    const now = new Date().toISOString();
     try {
-        await db.runTransaction(async (transaction) => {
-            const doc = await transaction.get(ANALYTICS_REF);
-            const data = doc.data() || {
-                totalEmailsReceived: 0,
-                totalAIRepliesSent: 0,
-                failedReplies: 0,
-            };
-
-            const update: any = {};
-            if (type === 'received') update.totalEmailsReceived = (data.totalEmailsReceived || 0) + 1;
-            if (type === 'replied') update.totalAIRepliesSent = (data.totalAIRepliesSent || 0) + 1;
-            if (type === 'failed') update.failedReplies = (data.failedReplies || 0) + 1;
-            
-            update.lastReplyTime = new Date().toISOString();
-
-            transaction.set(ANALYTICS_REF, { ...data, ...update }, { merge: true });
+        await getDb().runTransaction(async (transaction: any) => {
+            const doc = await transaction.get(docRef);
+            if (!doc.exists) {
+                transaction.set(docRef, {
+                    totalEmailsReceived: type === 'received' ? 1 : 0,
+                    totalAIRepliesSent: type === 'replied' ? 1 : 0,
+                    failedReplies: type === 'failed' ? 1 : 0,
+                    lastReceivedEmail: type === 'received' ? now : null,
+                    lastAIReplyTime: type === 'replied' ? now : null
+                });
+            } else {
+                const data = doc.data()!;
+                const update: any = {
+                    totalEmailsReceived: (data.totalEmailsReceived || 0) + (type === 'received' ? 1 : 0),
+                    totalAIRepliesSent: (data.totalAIRepliesSent || 0) + (type === 'replied' ? 1 : 0),
+                    failedReplies: (data.failedReplies || 0) + (type === 'failed' ? 1 : 0)
+                };
+                if (type === 'received') update.lastReceivedEmail = now;
+                if (type === 'replied') update.lastAIReplyTime = now;
+                transaction.update(docRef, update);
+            }
         });
     } catch (error) {
         console.error('Error updating analytics:', error);
@@ -29,7 +42,7 @@ export async function updateAnalytics(type: 'received' | 'replied' | 'failed') {
 
 export async function logEmail(emailId: string, status: 'success' | 'failed' | 'pending', error?: string) {
     try {
-        await db.collection('emailLogs').add({
+        await getDb().collection('emailLogs').add({
             emailId,
             status,
             timestamp: new Date().toISOString(),
@@ -42,7 +55,7 @@ export async function logEmail(emailId: string, status: 'success' | 'failed' | '
 
 export async function logPendingReview(emailId: string, reason: string) {
     try {
-        await db.collection('pendingReviews').add({
+        await getDb().collection('pendingReviews').add({
             emailId,
             reason,
             status: 'Needs Human Review',

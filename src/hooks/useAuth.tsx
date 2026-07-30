@@ -8,7 +8,9 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   updateProfile,
-  updatePassword
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
@@ -356,8 +358,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-  const changePassword = async (newPass: string) => {
+  const changePassword = async (newPass: string, currentPass: string) => {
     if (!auth.currentUser) throw new Error("No user logged in");
+    if (!auth.currentUser.email) throw new Error("User has no email");
+    
+    // Reauthenticate
+    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPass);
+    await reauthenticateWithCredential(auth.currentUser, credential);
+    
     await updatePassword(auth.currentUser, newPass);
   };
 

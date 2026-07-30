@@ -21,4 +21,8 @@
     --bg-surface: #0f172a;
     --text-main: #f8fafc;
   }
+
+  body {
+    overflow-x: hidden;
+  }
 }

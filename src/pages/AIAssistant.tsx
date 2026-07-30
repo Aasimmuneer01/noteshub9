@@ -1,51 +1,46 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Settings, Clock, Send, Paperclip, Mic, Bot, Crown } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Bot, Send, User, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { Message, Chat } from '../types';
+import { Message } from '../types';
 
-import { doc, getDoc, collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { doc, onSnapshot, addDoc, collection, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 export default function AIAssistant() {
-  const { userData, isPremium } = useAuth();
+  const { userData } = useAuth();
   const navigate = useNavigate();
-  const [selectedAI, setSelectedAI] = useState('Groq');
+  const [searchParams] = useSearchParams();
+  const chatId = searchParams.get('chatId');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [usage, setUsage] = useState<{ count: number } | null>(null);
-  const [chats, setChats] = useState<Chat[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [aiEnabled, setAiEnabled] = useState(true);
 
   useEffect(() => {
-    if (userData?.uid) {
-      // Fetch Usage
-      getDoc(doc(db, 'users', userData.uid, 'aiUsage', 'stats'))
-        .then(snap => {
-           setUsage(snap.exists() ? snap.data() : { count: 0 });
-        })
-        .catch(err => console.error(err));
+    const unsub = onSnapshot(doc(db, 'ai_settings', 'status'), (docSnap) => {
+        if (docSnap.exists()) {
+            setAiEnabled(docSnap.data().enabled);
+        }
+    });
+    return () => unsub();
+  }, []);
 
-      // Fetch Chats
-      // Chats don't have a rule, so this might fail, but we catch it
-      getDocs(query(collection(db, 'users', userData.uid, 'chats'), orderBy('updatedAt', 'desc')))
-        .then(snap => {
-          const fetchedChats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setChats(fetchedChats);
-        })
-        .catch(err => {
-          console.error(err);
-          setChats([]);
-        });
+  useEffect(() => {
+    if (chatId && userData?.uid) {
+        const fetchChat = async () => {
+            const chatSnap = await getDoc(doc(db, 'users', userData.uid, 'chats', chatId));
+            if (chatSnap.exists()) {
+                setMessages(chatSnap.data().messages || []);
+            }
+        };
+        fetchChat();
     }
-  }, [userData]);
+  }, [chatId, userData]);
+
   const sendMessage = async () => {
-    if (selectedAI !== 'Groq') {
-      alert("Google Gemini is not available yet. Please select Groq.");
-      return;
-    }
+    if (!aiEnabled) return;
     if (!input.trim()) return;
     
     const userMessage: Message = {
@@ -56,7 +51,8 @@ export default function AIAssistant() {
       provider: 'Groq',
     };
     
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput('');
     setIsTyping(true);
 
@@ -65,103 +61,116 @@ export default function AIAssistant() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })) 
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })) 
         })
       });
       
       const data = await response.json();
       
-      setMessages(prev => [...prev, {
+      const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: data.content,
         createdAt: new Date(),
         provider: 'Groq',
-      }]);
+      };
+      const finalMessages = [...newMessages, assistantMessage];
+      setMessages(finalMessages);
+
+      // Save to Firestore
+      if (userData?.uid) {
+          if (chatId) {
+              await updateDoc(doc(db, 'users', userData.uid, 'chats', chatId), {
+                  messages: finalMessages,
+                  updatedAt: new Date()
+              });
+          } else {
+              const newChat = await addDoc(collection(db, 'users', userData.uid, 'chats'), {
+                  title: userMessage.content.substring(0, 30),
+                  subject: 'General',
+                  createdAt: new Date(),
+                  updatedAt: new Date(),
+                  messages: finalMessages
+              });
+              navigate('/ai-assistant?chatId=' + newChat.id, { replace: true });
+          }
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Fetch error:", err);
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: "Sorry, I encountered an error. Please try again.",
+        createdAt: new Date(),
+        provider: 'Groq',
+      }]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  return (
-    <div className="flex h-screen bg-background-main text-text-main">
-      {/* History Drawer */}
-      {historyOpen && (
-        <div className="absolute inset-0 z-20 w-full sm:w-64 border-r border-secondary p-4 bg-surface overflow-y-auto">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold">Chat History</h2>
-            <button onClick={() => setHistoryOpen(false)}>Close</button>
-          </div>
-          <div className="space-y-2">
-            {chats.map(chat => (
-              <div key={chat.id} className="p-3 bg-background-main rounded-lg cursor-pointer hover:bg-secondary">
-                <p className="font-bold truncate">{chat.title}</p>
-                <p className="text-xs text-gray-400">{new Date(chat.updatedAt.seconds * 1000).toLocaleDateString()}</p>
-              </div>
-            ))}
-          </div>
+  if (!aiEnabled) {
+    return (
+        <div className="max-w-2xl mx-auto p-8 text-center bg-white rounded-xl shadow border border-gray-200 mt-20">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900">AI Assistant Temporarily Unavailable</h2>
+            <p className="text-gray-600 mb-4">
+                The AI Assistant has been temporarily disabled by the NotesHub9 Administrator.
+            </p>
+            <p className="text-gray-600">
+                If you believe this is an error or need assistance, please contact us at: <a href="mailto:noteshub9.official@gmail.com" className="text-blue-600 underline">noteshub9.official@gmail.com</a>
+            </p>
         </div>
-      )}
+    );
+  }
 
-      {/* Main Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <div className="p-4 border-b border-secondary flex items-center justify-between gap-2 flex-wrap">
-            <button onClick={() => navigate(-1)}><ArrowLeft /></button>
-            <h1 className="font-bold truncate flex-1 text-center sm:text-left">Premium AI Assistant 👑</h1>
-            <div className="flex gap-2">
-                <button onClick={() => setHistoryOpen(!historyOpen)}><Clock /></button>
-                <button onClick={() => navigate('/profile')}><Settings /></button>
-            </div>
+  return (
+    <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 mt-16 max-w-2xl mx-auto shadow-xl rounded-2xl overflow-hidden border border-gray-200">
+      {/* Header */}
+      <div className="bg-blue-600 p-4 text-white font-semibold flex justify-between items-center">
+        <span>NotesHub9 AI Assistant</span>
+        <div className='flex gap-2 items-center'>
+            <button onClick={() => navigate('/ai-history')} className='text-sm bg-white/20 px-2 py-1 rounded'>History</button>
+            <button onClick={() => navigate('/')}><X size={20}/></button>
         </div>
-        
-        {/* Status Card & Model Selector */}
-        <div className="p-4 flex flex-col sm:flex-row gap-4">
-            <div className="bg-surface p-4 rounded-xl flex-1 border border-secondary text-sm">
-                <span className="text-green-500 font-bold">🟢 AI Online</span>
-                <p>Usage: {usage?.count || 0} / 100 Messages</p>
-                <p>Plan: {isPremium ? 'Premium Active' : 'Free'}</p>
-            </div>
-            <select 
-                className="bg-surface border border-secondary rounded-xl p-2 h-fit w-full sm:w-auto"
-                value={selectedAI}
-                onChange={(e) => setSelectedAI(e.target.value)}
-            >
-                <option>Groq</option>
-                <option>Gemini (Coming Soon)</option>
-            </select>
-        </div>
-        
-        {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
-          {messages.length === 0 && (
-            <div className="text-center pt-10">
-              <h2 className="text-xl font-bold">How can I help you today?</h2>
-            </div>
-          )}
-          {messages.map(m => (
-            <div key={m.id} className={`p-4 rounded-xl ${m.role === 'user' ? 'bg-primary ml-auto' : 'bg-surface mr-auto'}`}>
+      </div>
+      
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
+        {messages.map(m => (
+          <div key={m.id} className={`flex items-start gap-2 ${m.role === 'user' ? 'justify-end' : ''}`}>
+            {m.role === 'assistant' && (
+              <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white">
+                <Bot size={16}/>
+              </div>
+            )}
+            <div className={`p-3 rounded-2xl max-w-[80%] ${m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-white border border-gray-100 shadow-sm text-gray-900'}`}>
               {m.content}
             </div>
-          ))}
-          {isTyping && <div className="text-sm opacity-50">AI is typing...</div>}
-        </div>
-
-        {/* Input Area */}
-        <div className="p-4 border-t border-secondary bg-background-main">
-          <div className="flex items-center gap-2 bg-surface p-2 rounded-xl">
-            <button><Paperclip /></button>
-            <input 
-              className="flex-1 bg-transparent outline-none p-2"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-            />
-            <button><Mic /></button>
-            <button onClick={sendMessage} className="p-2 bg-primary text-white rounded-lg"><Send /></button>
           </div>
+        ))}
+        {isTyping && (
+          <div className="flex items-start gap-2">
+            <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white">
+              <Bot size={16}/>
+            </div>
+            <div className="p-3 rounded-2xl bg-white border border-gray-100 shadow-sm text-sm text-gray-900">
+              AI is typing...
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input Area */}
+      <div className="p-4 border-t border-gray-200 bg-white">
+        <div className="flex items-center gap-2 bg-gray-100 p-3 rounded-full">
+          <input 
+            className="flex-1 bg-transparent outline-none text-sm text-gray-900 font-medium"
+            placeholder="Type hereeee..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+          />
+          <button onClick={sendMessage} className="p-1.5 text-gray-500"><Send size={18} /></button>
         </div>
       </div>
     </div>

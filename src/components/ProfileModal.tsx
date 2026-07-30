@@ -10,6 +10,7 @@ interface ProfileModalProps {
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user, changePassword, userData } = useAuth();
   const [newPassword, setNewPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -32,9 +33,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     setError('');
     setMessage('');
     try {
-      await changePassword(newPassword);
+      await changePassword(newPassword, currentPassword);
       setMessage('Password updated successfully');
       setNewPassword('');
+      setCurrentPassword('');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -45,11 +47,17 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-background-main border border-secondary p-6 rounded-2xl w-full max-w-sm shadow-2xl mx-4">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-background-main border border-secondary p-6 rounded-2xl w-full max-w-sm shadow-2xl mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Profile</h2>
-          <button onClick={onClose} className="p-1 hover:bg-surface rounded-lg"><X size={20} /></button>
+          <button onClick={onClose} className="p-2 hover:bg-surface rounded-full"><X size={24} /></button>
         </div>
         <div className="space-y-4">
           <div>
@@ -64,6 +72,13 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2">Change Password</p>
             <input
               type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Current password"
+              className="w-full bg-surface border border-secondary rounded-lg p-2 text-text-main mb-2"
+            />
+            <input
+              type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="New password"
@@ -72,9 +87,15 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <button
               onClick={handlePasswordChange}
               disabled={loading}
-              className="w-full bg-primary text-white py-2 rounded-lg font-bold hover:bg-primary/90 transition-all"
+              className="w-full bg-primary text-white py-2 rounded-lg font-bold hover:bg-primary/90 transition-all mb-2"
             >
               {loading ? 'Updating...' : 'Update Password'}
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full bg-gray-200 text-gray-800 py-2 rounded-lg font-bold hover:bg-gray-300 transition-all"
+            >
+              Close
             </button>
             {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
             {message && <p className="text-green-500 text-xs mt-2">{message}</p>}
