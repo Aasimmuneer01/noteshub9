@@ -40,17 +40,19 @@ async function handleReplyEmails(req: any, res: any) {
   try {
     const oAuth2Client = new google.auth.OAuth2(
       process.env.GMAIL_CLIENT_ID,
-      process.env.GMAIL_CLIENT_SECRET,
-      process.env.APP_URL ? `${process.env.APP_URL}/oauth2callback` : "http://localhost:3000/oauth2callback"
+      process.env.GMAIL_CLIENT_SECRET
     );
 
+    console.log('GMAIL_REFRESH_TOKEN exists:', !!process.env.GMAIL_REFRESH_TOKEN);
     oAuth2Client.setCredentials({
       refresh_token: process.env.GMAIL_REFRESH_TOKEN,
     });
 
     const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
     
+    console.log('Attempting to get Gmail profile...');
     const profileRes = await gmail.users.getProfile({ userId: 'me' });
+    console.log('Gmail profile received.');
     const myEmail = profileRes.data.emailAddress?.toLowerCase() || '';
 
     const response = await gmail.users.messages.list({
@@ -200,6 +202,8 @@ Confidence: [Confidence Score 0-10]`
           ],
           model: 'llama-3.3-70b-versatile',
         });
+        
+        console.log('Groq completion received:', JSON.stringify(chatCompletion.choices[0]));
         
         const replyContent = chatCompletion.choices[0]?.message?.content || '';
         const confidenceMatch = replyContent.match(/Confidence:\s*(\d+)/i);
