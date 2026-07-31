@@ -4,7 +4,7 @@ import { Bot, Send, User, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Message } from '../types';
 
-import { doc, onSnapshot, addDoc, collection, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, addDoc, collection, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 export default function AIAssistant() {
@@ -70,27 +70,32 @@ export default function AIAssistant() {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.content,
+        content: data.content || 'No response',
         createdAt: new Date(),
-        provider: 'Groq',
+        provider: 'Gemini',
       };
       const finalMessages = [...newMessages, assistantMessage];
       setMessages(finalMessages);
 
       // Save to Firestore
       if (userData?.uid) {
+          const serializedMessages = finalMessages.map(m => ({
+              ...m,
+              createdAt: m.createdAt instanceof Date ? Timestamp.fromDate(m.createdAt) : m.createdAt
+          }));
+          
           if (chatId) {
               await updateDoc(doc(db, 'users', userData.uid, 'chats', chatId), {
-                  messages: finalMessages,
-                  updatedAt: new Date()
+                  messages: serializedMessages,
+                  updatedAt: Timestamp.now()
               });
           } else {
               const newChat = await addDoc(collection(db, 'users', userData.uid, 'chats'), {
                   title: userMessage.content.substring(0, 30),
                   subject: 'General',
-                  createdAt: new Date(),
-                  updatedAt: new Date(),
-                  messages: finalMessages
+                  createdAt: Timestamp.now(),
+                  updatedAt: Timestamp.now(),
+                  messages: serializedMessages
               });
               navigate('/ai-assistant?chatId=' + newChat.id, { replace: true });
           }

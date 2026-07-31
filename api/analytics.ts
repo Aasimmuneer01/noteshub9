@@ -6,7 +6,7 @@ let db: any;
 function getDb() {
     if (!db) {
         if (getApps().length === 0) {
-            initializeApp();
+            initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID });
         }
         db = getFirestore();
     }

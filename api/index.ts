@@ -1,11 +1,20 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
-import Groq from 'groq-sdk';
+import { GoogleGenAI } from "@google/genai";
 import { google } from 'googleapis';
 import { updateAnalytics, logEmail, logPendingReview } from './analytics.js';
 
 const app = express();
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+  httpOptions: {
+    headers: {
+      'User-Agent': 'aistudio-build',
+    }
+  }
+});
 
 app.use(express.json());
 app.use((req, res, next) => {
@@ -28,13 +37,13 @@ async function handleReplyEmails(req: any, res: any) {
   if (!process.env.GMAIL_CLIENT_ID) missing.push('GMAIL_CLIENT_ID');
   if (!process.env.GMAIL_CLIENT_SECRET) missing.push('GMAIL_CLIENT_SECRET');
   if (!process.env.GMAIL_REFRESH_TOKEN) missing.push('GMAIL_REFRESH_TOKEN');
-  if (!process.env.GROQ_API_KEY) missing.push('GROQ_API_KEY');
+  if (!process.env.GEMINI_API_KEY) missing.push('GEMINI_API_KEY');
 
   console.log('Environment check:', {
     GMAIL_CLIENT_ID: !!process.env.GMAIL_CLIENT_ID,
     GMAIL_CLIENT_SECRET: !!process.env.GMAIL_CLIENT_SECRET,
     GMAIL_REFRESH_TOKEN: !!process.env.GMAIL_REFRESH_TOKEN,
-    GROQ_API_KEY: !!process.env.GROQ_API_KEY
+    GEMINI_API_KEY: !!process.env.GEMINI_API_KEY
   });
   if (missing.length > 0) {
     return res.status(500).json({ error: `Missing environment variables: ${missing.join(', ')}` });
@@ -153,82 +162,75 @@ async function handleReplyEmails(req: any, res: any) {
         getPlainText(fullMsg.data.payload);
 
         try {
-            console.log('Sending prompt to Groq for message', msg.id, '...');
-            const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-            const chatCompletion = await groq.chat.completions.create({
-              messages: [
-                {
-                  role: "system",
-                              content: `You are the official AI customer support assistant for NotesHub9.
-    
-    Website:
-    https://noteshub9.vercel.app
-    
-    About:
-    NotesHub9 is a free educational platform for students.
-    
-    Features:
-    
-    - Study Notes
-    - PDF Downloads
-    - JKBOSE Resources
-    - NCERT Resources
-    - Previous Year Papers
-    - Important Questions
-    - Class-wise Resources
-    - Educational Materials
-    
-    The AI should be able to answer questions about:
-    
-    - Website usage
-    - Download problems
-    - Missing notes
-    - Broken links
-    - Bug reports
-    - Feature requests
-    - User feedback
-    
-    Rules:
-    
-    - Always be polite.
-    - Never invent information.
-    - Never guess.
-    - If the information is unknown, reply:
-    
-    "I don't currently have that information. Your request has been forwarded to the NotesHub9 Team."
-    
-    If the website is reported as down, reply:
-    
-    "Thank you for informing us. Our team has been notified and is working to restore the service as quickly as possible."
-    
-    Never tell users to check social media unless explicitly instructed.
-    
-    Always sign replies:
-    
-    Best regards,
-    
-    NotesHub9 AI Support
-    
-    IMPORTANT: Provide your response in the following format:
-    Reply:
-    [Your reply body here]
-    Confidence: [Confidence Score 0-10]`
-                },
-                {
-                  role: "user",
-                  content: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`
-                }
-              ],
-              model: 'llama3-8b-8192',
+            console.log('Sending prompt to Gemini for message', msg.id, '...');
+            const response = await ai.models.generateContent({
+              model: 'gemini-1.5-flash',
+              contents: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`,
+              config: {
+                systemInstruction: `You are the official AI customer support assistant for NotesHub9.
+
+Website:
+https://noteshub9.vercel.app
+
+About:
+NotesHub9 is a free educational platform for students.
+
+Features:
+
+- Study Notes
+- PDF Downloads
+- JKBOSE Resources
+- NCERT Resources
+- Previous Year Papers
+- Important Questions
+- Class-wise Resources
+- Educational Materials
+
+The AI should be able to answer questions about:
+
+- Website usage
+- Download problems
+- Missing notes
+- Broken links
+- Bug reports
+- Feature requests
+- User feedback
+
+Rules:
+
+- Always be polite.
+- Never invent information.
+- Never guess.
+- If the information is unknown, reply:
+
+"I don't currently have that information. Your request has been forwarded to the NotesHub9 Team."
+
+If the website is reported as down, reply:
+
+"Thank you for informing us. Our team has been notified and is working to restore the service as quickly as possible."
+
+Never tell users to check social media unless explicitly instructed.
+
+Always sign replies:
+
+Best regards,
+
+NotesHub9 AI Support
+
+IMPORTANT: Provide your response in the following format:
+Reply:
+[Your reply body here]
+Confidence: [Confidence Score 0-10]`
+              }
             });
-            console.log('Groq completion received for message', msg.id);
+            console.log('Gemini completion received for message', msg.id);
             
-            const replyContent = chatCompletion.choices[0]?.message?.content || '';
+            const replyContent = response.text || '';
             const confidenceMatch = replyContent.match(/Confidence:\s*(\d+)/i);
             const confidence = confidenceMatch ? parseInt(confidenceMatch[1], 10) : 0;
             const replyBodyMatch = replyContent.match(/Reply:\s*([\s\S]*?)Confidence:/i);
             let replyBody = replyBodyMatch ? replyBodyMatch[1].trim() : replyContent;
-    
+
             if (confidence <= 7) {
                 replyBody = `Thank you for contacting NotesHub9.
     
@@ -312,19 +314,19 @@ async function handleReplyEmails(req: any, res: any) {
 app.post('/api/chat', async (req, res) => {
     try {
         const { messages } = req.body;
-        if (!process.env.GROQ_API_KEY) {
-            return res.status(500).json({ error: "GROQ_API_KEY not configured" });
+        if (!process.env.GEMINI_API_KEY) {
+            return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
         }
-        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-        const chatCompletion = await groq.chat.completions.create({
-            messages: [
-                { role: "system", content: "You are a helpful AI assistant for NotesHub9." },
-                ...messages
-            ],
-            model: 'llama3-8b-8192',
+        
+        const response = await ai.models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: messages[messages.length - 1].content,
+            config: {
+                systemInstruction: "You are a helpful AI assistant for NotesHub9."
+            }
         });
         
-        const content = chatCompletion.choices[0]?.message?.content || 'No response';
+        const content = response.text || 'No response';
         res.json({ content });
     } catch (err) {
         console.error('Error in chat:', err);
