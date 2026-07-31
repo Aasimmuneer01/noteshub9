@@ -19,7 +19,10 @@ export default function Navbar() {
       <ProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
       <PremiumModal isOpen={showPremium} onClose={() => setShowPremium(false)} />
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="text-xl font-bold tracking-tighter">EduPlatform</Link>
+        <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tighter">
+          <img src="/favicon.png" alt="Logo" className="w-10 h-10 rounded-full" />
+          NotesHub9
+        </Link>
         
         {/* Desktop Links */}
         <div className="hidden md:flex items-center gap-6 pt-4">
