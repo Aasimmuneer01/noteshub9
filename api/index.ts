@@ -18,8 +18,10 @@ async function handleReplyEmails(req: any, res: any) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     if (!token || token !== process.env.CRON_SECRET) {
+      console.error('CRON_SECRET validation failed');
       return res.status(401).json({ error: "Unauthorized" });
     }
+    console.log('CRON_SECRET validation passed');
   }
 
   const missing = [];
@@ -49,14 +51,17 @@ async function handleReplyEmails(req: any, res: any) {
       process.env.GMAIL_CLIENT_SECRET,
       process.env.APP_URL ? `${process.env.APP_URL}/oauth2callback` : "http://localhost:3000/oauth2callback"
     );
+    console.log('Gmail OAuth client initialized');
 
     console.log('GMAIL_REFRESH_TOKEN exists:', !!process.env.GMAIL_REFRESH_TOKEN);
     oAuth2Client.setCredentials({
       refresh_token: process.env.GMAIL_REFRESH_TOKEN,
       scope: 'https://www.googleapis.com/auth/gmail.modify',
     });
+    console.log('Refreshing access token...');
     const { credentials } = await oAuth2Client.refreshAccessToken();
     oAuth2Client.setCredentials(credentials);
+    console.log('Access token refreshed successfully');
 
     const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
     
@@ -147,7 +152,7 @@ async function handleReplyEmails(req: any, res: any) {
         };
         getPlainText(fullMsg.data.payload);
 
-        console.log('Sending prompt to Groq...');
+        console.log('Sending prompt to Groq for message', msg.id, '...');
         const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
         const chatCompletion = await groq.chat.completions.create({
           messages: [
@@ -216,7 +221,7 @@ Confidence: [Confidence Score 0-10]`
           model: 'llama3-8b-8192',
         });
         
-        console.log('Groq completion received:', JSON.stringify(chatCompletion.choices[0]));
+        console.log('Groq completion received for message', msg.id, ':', JSON.stringify(chatCompletion.choices[0]));
         
         const replyContent = chatCompletion.choices[0]?.message?.content || '';
         const confidenceMatch = replyContent.match(/Confidence:\s*(\d+)/i);
@@ -235,6 +240,7 @@ Best regards,
 
 NotesHub9 AI Support`;
             await logPendingReview(msg.id, `Confidence: ${confidence}`);
+            console.log('Logged pending review for message', msg.id);
         }
 
         const subject = subjectHeader.toLowerCase().startsWith('re:') ? subjectHeader : `Re: ${subjectHeader}`;
@@ -258,6 +264,7 @@ NotesHub9 AI Support`;
         const emailRaw = emailLines.join('\r\n');
         const base64EncodedEmail = Buffer.from(emailRaw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
+        console.log('Sending reply email for message', msg.id, '...');
         await gmail.users.messages.send({
           userId: 'me',
           requestBody: {
@@ -265,10 +272,12 @@ NotesHub9 AI Support`;
             threadId: threadId,
           },
         });
+        console.log('Reply email sent for message', msg.id);
 
         replied++;
         await updateAnalytics('replied');
         await logEmail(msg.id, 'success');
+        console.log('Logged email success for message', msg.id);
       } catch (err) {
         console.error('Error processing message:', err);
         errors++;
