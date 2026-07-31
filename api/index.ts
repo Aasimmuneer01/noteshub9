@@ -28,6 +28,12 @@ async function handleReplyEmails(req: any, res: any) {
   if (!process.env.GMAIL_REFRESH_TOKEN) missing.push('GMAIL_REFRESH_TOKEN');
   if (!process.env.GROQ_API_KEY) missing.push('GROQ_API_KEY');
 
+  console.log('Environment check:', {
+    GMAIL_CLIENT_ID: !!process.env.GMAIL_CLIENT_ID,
+    GMAIL_CLIENT_SECRET: !!process.env.GMAIL_CLIENT_SECRET,
+    GMAIL_REFRESH_TOKEN: !!process.env.GMAIL_REFRESH_TOKEN,
+    GROQ_API_KEY: !!process.env.GROQ_API_KEY
+  });
   if (missing.length > 0) {
     return res.status(500).json({ error: `Missing environment variables: ${missing.join(', ')}` });
   }
@@ -47,8 +53,10 @@ async function handleReplyEmails(req: any, res: any) {
     console.log('GMAIL_REFRESH_TOKEN exists:', !!process.env.GMAIL_REFRESH_TOKEN);
     oAuth2Client.setCredentials({
       refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+      scope: 'https://www.googleapis.com/auth/gmail.modify',
     });
-    await oAuth2Client.getAccessToken();
+    const { credentials } = await oAuth2Client.refreshAccessToken();
+    oAuth2Client.setCredentials(credentials);
 
     const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
     
@@ -205,7 +213,7 @@ Confidence: [Confidence Score 0-10]`
               content: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`
             }
           ],
-          model: 'llama-3.3-70b-versatile',
+          model: 'llama3-8b-8192',
         });
         
         console.log('Groq completion received:', JSON.stringify(chatCompletion.choices[0]));
@@ -300,7 +308,7 @@ app.post('/api/chat', async (req, res) => {
                 { role: "system", content: "You are a helpful AI assistant for NotesHub9." },
                 ...messages
             ],
-            model: 'llama-3.3-70b-versatile',
+            model: 'llama3-8b-8192',
         });
         
         const content = chatCompletion.choices[0]?.message?.content || 'No response';
