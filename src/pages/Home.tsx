@@ -7,6 +7,7 @@ import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebas
 import { useAuth } from '../hooks/useAuth';
 import { Resource } from '../types';
 import CreatorSection from '../components/CreatorSection';
+import PremiumExpiryCounter from '../components/PremiumExpiryCounter';
 
 export default function Home() {
   const { user, isPremium, userData } = useAuth();
@@ -111,7 +112,10 @@ export default function Home() {
           <Crown className="mb-4" />
           <h3 className="text-xl font-bold mb-2">Premium Membership</h3>
           <p className="text-sm opacity-90 mb-4">Unlock downloads, AI assistant, and more.</p>
-          <Link to="/resources" className="block text-center w-full py-3 bg-white text-blue-600 rounded-xl font-bold">Upgrade Now</Link>
+          {isPremium && userData?.premiumExpiry && userData?.premiumPlan !== 'Lifetime' && (
+             <PremiumExpiryCounter expiryDate={userData.premiumExpiry} />
+          )}
+          <Link to="/resources" className="block text-center w-full py-3 bg-white text-blue-600 rounded-xl font-bold mt-4">Upgrade Now</Link>
         </div>
         <div className="p-6 bg-surface border border-secondary rounded-3xl shadow-sm">
           <Zap className="mb-4 text-primary" />
