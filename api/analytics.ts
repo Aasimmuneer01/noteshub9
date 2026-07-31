@@ -5,19 +5,29 @@ let db: any;
 
 function getDb() {
     if (!db) {
-        if (getApps().length === 0) {
-            initializeApp({ projectId: process.env.FIREBASE_PROJECT_ID });
+        try {
+            if (getApps().length === 0) {
+                initializeApp(); // Let Firebase detect environment configuration automatically
+            }
+            db = getFirestore();
+        } catch (e) {
+            console.error('Firebase Admin init failed', e);
+            db = null; // Mark as failed
         }
-        db = getFirestore();
     }
     return db;
 }
 
 export async function updateAnalytics(type: 'received' | 'replied' | 'failed') {
+    const db = getDb();
+    if (!db) {
+        console.warn('Analytics skipped: Database not available');
+        return;
+    }
     try {
-        const docRef = getDb().collection('analytics').doc('summary');
+        const docRef = db.collection('analytics').doc('summary');
         const now = new Date().toISOString();
-        await getDb().runTransaction(async (transaction: any) => {
+        await db.runTransaction(async (transaction: any) => {
             const doc = await transaction.get(docRef);
             if (!doc.exists) {
                 transaction.set(docRef, {
@@ -45,8 +55,10 @@ export async function updateAnalytics(type: 'received' | 'replied' | 'failed') {
 }
 
 export async function logEmail(emailId: string, status: 'success' | 'failed' | 'pending', error?: string) {
+    const db = getDb();
+    if (!db) return;
     try {
-        await getDb().collection('emailLogs').add({
+        await db.collection('emailLogs').add({
             emailId,
             status,
             timestamp: new Date().toISOString(),
@@ -58,8 +70,10 @@ export async function logEmail(emailId: string, status: 'success' | 'failed' | '
 }
 
 export async function logPendingReview(emailId: string, reason: string) {
+    const db = getDb();
+    if (!db) return;
     try {
-        await getDb().collection('pendingReviews').add({
+        await db.collection('pendingReviews').add({
             emailId,
             reason,
             status: 'Needs Human Review',

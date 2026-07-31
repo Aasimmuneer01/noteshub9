@@ -164,7 +164,7 @@ async function handleReplyEmails(req: any, res: any) {
         try {
             console.log('Sending prompt to Gemini for message', msg.id, '...');
             const response = await ai.models.generateContent({
-              model: 'gemini-1.5-flash',
+              model: 'gemini-2.0-flash',
               contents: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`,
               config: {
                 systemInstruction: `You are the official AI customer support assistant for NotesHub9.
@@ -319,7 +319,7 @@ app.post('/api/chat', async (req, res) => {
         }
         
         const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.0-flash',
             contents: messages[messages.length - 1].content,
             config: {
                 systemInstruction: "You are a helpful AI assistant for NotesHub9."
