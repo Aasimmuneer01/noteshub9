@@ -40,7 +40,8 @@ async function handleReplyEmails(req: any, res: any) {
   try {
     const oAuth2Client = new google.auth.OAuth2(
       process.env.GMAIL_CLIENT_ID,
-      process.env.GMAIL_CLIENT_SECRET
+      process.env.GMAIL_CLIENT_SECRET,
+      process.env.APP_URL ? `${process.env.APP_URL}/oauth2callback` : "http://localhost:3000/oauth2callback"
     );
 
     console.log('GMAIL_REFRESH_TOKEN exists:', !!process.env.GMAIL_REFRESH_TOKEN);
@@ -200,7 +201,7 @@ Confidence: [Confidence Score 0-10]`
               content: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`
             }
           ],
-          model: 'llama-3.3-70b-versatile',
+          model: 'llama-3.1-70b-versatile',
         });
         
         console.log('Groq completion received:', JSON.stringify(chatCompletion.choices[0]));
@@ -295,7 +296,7 @@ app.post('/api/chat', async (req, res) => {
                 { role: "system", content: "You are a helpful AI assistant for NotesHub9." },
                 ...messages
             ],
-            model: 'llama-3.3-70b-versatile',
+            model: 'llama-3.1-70b-versatile',
         });
         
         const content = chatCompletion.choices[0]?.message?.content || 'No response';
