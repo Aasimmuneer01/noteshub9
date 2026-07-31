@@ -152,132 +152,136 @@ async function handleReplyEmails(req: any, res: any) {
         };
         getPlainText(fullMsg.data.payload);
 
-        console.log('Sending prompt to Groq for message', msg.id, '...');
-        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-        const chatCompletion = await groq.chat.completions.create({
-          messages: [
-            {
-              role: "system",
-                          content: `You are the official AI customer support assistant for NotesHub9.
-
-Website:
-https://noteshub9.vercel.app
-
-About:
-NotesHub9 is a free educational platform for students.
-
-Features:
-
-- Study Notes
-- PDF Downloads
-- JKBOSE Resources
-- NCERT Resources
-- Previous Year Papers
-- Important Questions
-- Class-wise Resources
-- Educational Materials
-
-The AI should be able to answer questions about:
-
-- Website usage
-- Download problems
-- Missing notes
-- Broken links
-- Bug reports
-- Feature requests
-- User feedback
-
-Rules:
-
-- Always be polite.
-- Never invent information.
-- Never guess.
-- If the information is unknown, reply:
-
-"I don't currently have that information. Your request has been forwarded to the NotesHub9 Team."
-
-If the website is reported as down, reply:
-
-"Thank you for informing us. Our team has been notified and is working to restore the service as quickly as possible."
-
-Never tell users to check social media unless explicitly instructed.
-
-Always sign replies:
-
-Best regards,
-
-NotesHub9 AI Support
-
-IMPORTANT: Provide your response in the following format:
-Reply:
-[Your reply body here]
-Confidence: [Confidence Score 0-10]`
-            },
-            {
-              role: "user",
-              content: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`
+        try {
+            console.log('Sending prompt to Groq for message', msg.id, '...');
+            const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+            const chatCompletion = await groq.chat.completions.create({
+              messages: [
+                {
+                  role: "system",
+                              content: `You are the official AI customer support assistant for NotesHub9.
+    
+    Website:
+    https://noteshub9.vercel.app
+    
+    About:
+    NotesHub9 is a free educational platform for students.
+    
+    Features:
+    
+    - Study Notes
+    - PDF Downloads
+    - JKBOSE Resources
+    - NCERT Resources
+    - Previous Year Papers
+    - Important Questions
+    - Class-wise Resources
+    - Educational Materials
+    
+    The AI should be able to answer questions about:
+    
+    - Website usage
+    - Download problems
+    - Missing notes
+    - Broken links
+    - Bug reports
+    - Feature requests
+    - User feedback
+    
+    Rules:
+    
+    - Always be polite.
+    - Never invent information.
+    - Never guess.
+    - If the information is unknown, reply:
+    
+    "I don't currently have that information. Your request has been forwarded to the NotesHub9 Team."
+    
+    If the website is reported as down, reply:
+    
+    "Thank you for informing us. Our team has been notified and is working to restore the service as quickly as possible."
+    
+    Never tell users to check social media unless explicitly instructed.
+    
+    Always sign replies:
+    
+    Best regards,
+    
+    NotesHub9 AI Support
+    
+    IMPORTANT: Provide your response in the following format:
+    Reply:
+    [Your reply body here]
+    Confidence: [Confidence Score 0-10]`
+                },
+                {
+                  role: "user",
+                  content: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`
+                }
+              ],
+              model: 'llama3-8b-8192',
+            });
+            console.log('Groq completion received for message', msg.id);
+            
+            const replyContent = chatCompletion.choices[0]?.message?.content || '';
+            const confidenceMatch = replyContent.match(/Confidence:\s*(\d+)/i);
+            const confidence = confidenceMatch ? parseInt(confidenceMatch[1], 10) : 0;
+            const replyBodyMatch = replyContent.match(/Reply:\s*([\s\S]*?)Confidence:/i);
+            let replyBody = replyBodyMatch ? replyBodyMatch[1].trim() : replyContent;
+    
+            if (confidence <= 7) {
+                replyBody = `Thank you for contacting NotesHub9.
+    
+    Your request requires manual review by our support team.
+    
+    We have forwarded your message to the NotesHub9 Team and they will respond as soon as possible.
+    
+    Best regards,
+    
+    NotesHub9 AI Support`;
+                await logPendingReview(msg.id, `Confidence: ${confidence}`);
+                console.log('Logged pending review for message', msg.id);
             }
-          ],
-          model: 'llama3-8b-8192',
-        });
-        
-        console.log('Groq completion received for message', msg.id, ':', JSON.stringify(chatCompletion.choices[0]));
-        
-        const replyContent = chatCompletion.choices[0]?.message?.content || '';
-        const confidenceMatch = replyContent.match(/Confidence:\s*(\d+)/i);
-        const confidence = confidenceMatch ? parseInt(confidenceMatch[1], 10) : 0;
-        const replyBodyMatch = replyContent.match(/Reply:\s*([\s\S]*?)Confidence:/i);
-        let replyBody = replyBodyMatch ? replyBodyMatch[1].trim() : replyContent;
-
-        if (confidence <= 7) {
-            replyBody = `Thank you for contacting NotesHub9.
-
-Your request requires manual review by our support team.
-
-We have forwarded your message to the NotesHub9 Team and they will respond as soon as possible.
-
-Best regards,
-
-NotesHub9 AI Support`;
-            await logPendingReview(msg.id, `Confidence: ${confidence}`);
-            console.log('Logged pending review for message', msg.id);
+            
+            const subject = subjectHeader.toLowerCase().startsWith('re:') ? subjectHeader : `Re: ${subjectHeader}`;
+            const to = fromHeader;
+    
+            const emailLines = [];
+            emailLines.push(`To: ${to}`);
+            emailLines.push(`Subject: ${subject}`);
+            if (messageIdHeader) {
+              emailLines.push(`In-Reply-To: ${messageIdHeader}`);
+              if (referencesHeader) {
+                emailLines.push(`References: ${referencesHeader} ${messageIdHeader}`);
+              } else {
+                emailLines.push(`References: ${messageIdHeader}`);
+              }
+            }
+            emailLines.push('Content-Type: text/plain; charset="UTF-8"');
+            emailLines.push('');
+            emailLines.push(replyBody);
+    
+            const emailRaw = emailLines.join('\r\n');
+            const base64EncodedEmail = Buffer.from(emailRaw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    
+            console.log('Sending reply email for message', msg.id, '...');
+            await gmail.users.messages.send({
+              userId: 'me',
+              requestBody: {
+                raw: base64EncodedEmail,
+                threadId: threadId,
+              },
+            });
+            console.log('Reply email sent for message', msg.id);
+    
+            replied++;
+            await updateAnalytics('replied');
+            await logEmail(msg.id, 'success');
+            console.log('Logged email success for message', msg.id);
+        } catch (groqErr) {
+            console.error('Error during AI processing/sending for message', msg.id, groqErr);
+            throw groqErr; // Re-throw to be caught by outer try-catch
         }
-
-        const subject = subjectHeader.toLowerCase().startsWith('re:') ? subjectHeader : `Re: ${subjectHeader}`;
-        const to = fromHeader;
-
-        const emailLines = [];
-        emailLines.push(`To: ${to}`);
-        emailLines.push(`Subject: ${subject}`);
-        if (messageIdHeader) {
-          emailLines.push(`In-Reply-To: ${messageIdHeader}`);
-          if (referencesHeader) {
-            emailLines.push(`References: ${referencesHeader} ${messageIdHeader}`);
-          } else {
-            emailLines.push(`References: ${messageIdHeader}`);
-          }
-        }
-        emailLines.push('Content-Type: text/plain; charset="UTF-8"');
-        emailLines.push('');
-        emailLines.push(replyBody);
-
-        const emailRaw = emailLines.join('\r\n');
-        const base64EncodedEmail = Buffer.from(emailRaw).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-
-        console.log('Sending reply email for message', msg.id, '...');
-        await gmail.users.messages.send({
-          userId: 'me',
-          requestBody: {
-            raw: base64EncodedEmail,
-            threadId: threadId,
-          },
-        });
-        console.log('Reply email sent for message', msg.id);
-
-        replied++;
-        await updateAnalytics('replied');
-        await logEmail(msg.id, 'success');
-        console.log('Logged email success for message', msg.id);
       } catch (err) {
         console.error('Error processing message:', err);
         errors++;
