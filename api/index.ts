@@ -48,6 +48,7 @@ async function handleReplyEmails(req: any, res: any) {
     oAuth2Client.setCredentials({
       refresh_token: process.env.GMAIL_REFRESH_TOKEN,
     });
+    await oAuth2Client.getAccessToken();
 
     const gmail = google.gmail({ version: 'v1', auth: oAuth2Client });
     
@@ -56,6 +57,7 @@ async function handleReplyEmails(req: any, res: any) {
     console.log('Gmail profile received.');
     const myEmail = profileRes.data.emailAddress?.toLowerCase() || '';
 
+    console.log('Listing unread messages...');
     const response = await gmail.users.messages.list({
       userId: 'me',
       maxResults: 20,
@@ -63,6 +65,7 @@ async function handleReplyEmails(req: any, res: any) {
     });
 
     const messages = response.data.messages || [];
+    console.log(`Found ${messages.length} messages.`);
     const ignoredSenders = ['noreply', 'no-reply', 'google', 'github', 'firebase', 'newsletters', 'newsletter', 'automated', 'promotional'];
 
     for (const msg of messages) {
@@ -136,6 +139,7 @@ async function handleReplyEmails(req: any, res: any) {
         };
         getPlainText(fullMsg.data.payload);
 
+        console.log('Sending prompt to Groq...');
         const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
         const chatCompletion = await groq.chat.completions.create({
           messages: [
@@ -201,7 +205,7 @@ Confidence: [Confidence Score 0-10]`
               content: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`
             }
           ],
-          model: 'llama-3.1-70b-versatile',
+          model: 'llama-3.3-70b-versatile',
         });
         
         console.log('Groq completion received:', JSON.stringify(chatCompletion.choices[0]));
@@ -296,7 +300,7 @@ app.post('/api/chat', async (req, res) => {
                 { role: "system", content: "You are a helpful AI assistant for NotesHub9." },
                 ...messages
             ],
-            model: 'llama-3.1-70b-versatile',
+            model: 'llama-3.3-70b-versatile',
         });
         
         const content = chatCompletion.choices[0]?.message?.content || 'No response';
