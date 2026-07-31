@@ -1,18 +1,22 @@
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 
 let db: any;
 
 function getDb() {
     if (!db) {
+        if (getApps().length === 0) {
+            initializeApp();
+        }
         db = getFirestore();
     }
     return db;
 }
 
 export async function updateAnalytics(type: 'received' | 'replied' | 'failed') {
-    const docRef = getDb().collection('analytics').doc('summary');
-    const now = new Date().toISOString();
     try {
+        const docRef = getDb().collection('analytics').doc('summary');
+        const now = new Date().toISOString();
         await getDb().runTransaction(async (transaction: any) => {
             const doc = await transaction.get(docRef);
             if (!doc.exists) {
