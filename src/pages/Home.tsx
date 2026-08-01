@@ -73,7 +73,7 @@ export default function Home() {
            </div>
         </div>
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-text-main mb-2">Welcome back!</h1>
+          <h1 className="text-3xl font-bold text-text-main mb-2">Welcome! 👋</h1>
           <p className="text-gray-400 text-sm">{homepageSettings.subtitle}</p>
         </div>
         
