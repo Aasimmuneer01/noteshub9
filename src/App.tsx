@@ -11,7 +11,6 @@ import { db } from './firebase/config';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import UnreadNotification from './components/UnreadNotification';
-import BroadcastNotification from './components/BroadcastNotification';
 import Home from './pages/Home';
 import Resources from './pages/Resources';
 import PDFViewer from './components/PDFViewer';
@@ -91,7 +90,6 @@ function MainLayout() {
         }
       }} />}
       <UnreadNotification />
-      <BroadcastNotification />
       <Navbar />
       <main className="flex-1 overflow-auto pt-16">
         <Routes>

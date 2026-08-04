@@ -195,33 +195,42 @@ export default function Chat() {
         <div className="flex-1 overflow-y-auto mb-4 p-4 bg-background-main rounded-xl border border-secondary">
           {messages.map(msg => {
             if (msg.isBroadcast) {
-              if (lastReadCommunity && msg.timestamp && msg.timestamp.toMillis() <= lastReadCommunity.toMillis()) {
-                return null;
-              }
               return (
-                <div key={msg.id} className="mb-4 bg-yellow-50 border border-yellow-200 p-4 rounded-xl shadow-sm text-left">
-                  <div className="font-bold text-yellow-800 mb-1">Message from Admin</div>
-                  <p className="text-yellow-900">{msg.content}</p>
-                  <div className="text-xs text-yellow-700 mt-2">{msg.timestamp?.toDate().toLocaleString()}</div>
-                  <button 
-                    onClick={async () => {
-                      if (user) {
-                        await updateDoc(doc(db, 'users', user.uid), {
-                          [`lastReadChats.community`]: msg.timestamp
-                        });
-                      }
-                    }}
-                    className="mt-3 px-4 py-1.5 bg-yellow-500 text-white text-sm font-bold rounded-lg hover:bg-yellow-600 transition-colors"
-                  >
-                    Dismiss
-                  </button>
+                <div key={msg.id} className="mb-4 text-left">
+                  <div className="text-xs text-text-secondary mb-1 ml-2">Message from Admin</div>
+                  <div className="inline-block p-3 rounded-2xl bg-yellow-100 text-yellow-900 border border-yellow-200">
+                    <p className="font-bold mb-1">📢 Admin Announcement</p>
+                    <p>{msg.content}</p>
+                    <div className="text-xs text-yellow-700 mt-2">{msg.timestamp?.toDate().toLocaleString()}</div>
+                  </div>
                 </div>
               );
             }
             return (
               <div key={msg.id} className={`mb-4 ${msg.senderId === user?.uid ? 'text-right' : 'text-left'}`}>
-                <div className={`inline-block p-3 rounded-2xl ${msg.senderId === user?.uid ? 'bg-primary text-white' : 'bg-secondary text-text-main'}`}>
-                  {msg.text}
+                <div className={`inline-block p-3 rounded-2xl relative group ${msg.senderId === user?.uid ? 'bg-primary text-white' : 'bg-secondary text-text-main'}`}>
+                  {msg.deleted ? (
+                    <span className="italic text-sm opacity-70">This message was deleted.</span>
+                  ) : (
+                    <>
+                      {msg.text}
+                      {!msg.deleted && msg.senderId === user?.uid && (
+                        <button 
+                          onClick={() => {
+                            const path = activeChat === 'community' ? 'chats/community/messages' : `chats/${activeChat}/messages`;
+                            updateDoc(doc(db, path, msg.id), {
+                              deleted: true,
+                              text: "This message was deleted."
+                            });
+                          }}
+                          className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 p-1"
+                          title="Delete for everyone"
+                        >
+                          <Ban size={16} />
+                        </button>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             );

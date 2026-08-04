@@ -6,11 +6,11 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AlertCircle, X } from 'lucide-react';
 
 export default function BroadcastNotification() {
-  const { user, userData } = useAuth();
+  const { user, userData, loading } = useAuth();
   const [broadcast, setBroadcast] = useState<any>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || loading) return;
 
     // Listen to broadcast messages
     const broadcastQuery = query(
@@ -42,7 +42,7 @@ export default function BroadcastNotification() {
     });
 
     return unsub;
-  }, [user, userData]);
+  }, [user, userData, loading]);
 
   if (!broadcast) return null;
 
