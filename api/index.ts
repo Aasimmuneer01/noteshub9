@@ -4,6 +4,7 @@ import express from 'express';
 import { GoogleGenAI } from "@google/genai";
 import { google } from 'googleapis';
 import { updateAnalytics, logEmail, logPendingReview } from './analytics.js';
+import { getFirestore } from 'firebase-admin/firestore';
 
 const app = express();
 

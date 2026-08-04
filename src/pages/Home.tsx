@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { BookOpen, Search, Crown, Clock, Star, Zap, Layers } from 'lucide-react';
+import { BookOpen, Search, Crown, Clock, Star, Zap, Layers, MessageSquare } from 'lucide-react';
 import { db } from '../firebase/config';
 import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { useAuth } from '../hooks/useAuth';
@@ -75,6 +75,14 @@ export default function Home() {
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-text-main mb-2">Welcome! 👋</h1>
           <p className="text-gray-400 text-sm">{homepageSettings.subtitle}</p>
+        </div>
+        
+        {/* Chat Button */}
+        <div className="mb-4">
+           <Link to="/chat" className="flex items-center justify-center gap-2 w-full max-w-lg mx-auto py-3 bg-surface border border-secondary rounded-2xl text-text-main font-bold hover:border-primary transition-all">
+             <MessageSquare size={20} />
+             Open Chat
+           </Link>
         </div>
         
         {/* Search Bar */}

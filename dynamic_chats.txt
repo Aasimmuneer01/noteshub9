@@ -1,0 +1,6 @@
+                            <div class="col-span-1 md:col-span-2">
+                                <h4 class="font-bold text-lg mb-4">Conversations</h4>
+                                <div id="admin-chat-groups" class="space-y-4">
+                                    <div class="text-gray-500"><i data-lucide="loader" class="animate-spin w-5 h-5 inline mr-2"></i>Loading conversations...</div>
+                                </div>
+                            </div>

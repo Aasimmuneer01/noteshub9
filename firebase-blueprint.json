@@ -36,7 +36,8 @@
         "totalAIRepliesSent": { "type": "number" },
         "failedReplies": { "type": "number" },
         "lastReceivedEmail": { "type": "string", "format": "date-time" },
-        "lastReplyTime": { "type": "string", "format": "date-time" }
+        "lastReplyTime": { "type": "string", "format": "date-time" },
+        "chatEnabled": { "type": "boolean" }
       }
     },
     "EmailLog": {
@@ -49,6 +50,29 @@
         "timestamp": { "type": "string", "format": "date-time" },
         "error": { "type": "string" }
       }
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "text", "timestamp"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "Chat conversation metadata",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["private", "community"] },
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "lastMessageTimestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type"]
     }
   },
   "firestore": {
@@ -67,6 +91,14 @@
     "emailLogs/{logId}": {
       "schema": "EmailLog",
       "description": "Individual email processing logs"
+    },
+    "chats/{chatId}": {
+      "schema": "Chat",
+      "description": "Chat conversations"
+    },
+    "chats/{chatId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Chat messages"
     }
   }
 }

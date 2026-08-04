@@ -120,6 +120,9 @@
                 <button data-tab="ai" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
                     <i data-lucide="brain" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> AI Management
                 </button>
+                <button data-tab="chat-manager" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
+                    <i data-lucide="message-square" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Chat Manager
+                </button>
                 <button data-tab="website-control" class="sidebar-item w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-bold transition-all hover:bg-white/5 group">
                     <i data-lucide="power" class="w-5 h-5 opacity-50 group-hover:opacity-100 transition-opacity"></i> Website Control
                 </button>
@@ -196,6 +199,20 @@
                                 <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Banned</span>
                             </div>
                             <p id="stat-banned-users" class="text-4xl font-black font-mono">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl group hover:border-blue-500/30 transition-all">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-blue-500/10 text-blue-500 rounded-2xl group-hover:scale-110 transition-transform"><i data-lucide="message-square"></i></div>
+                                <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Total Chats</span>
+                            </div>
+                            <p id="stat-total-chats" class="text-4xl font-black font-mono">0</p>
+                        </div>
+                        <div class="bg-surface p-6 rounded-3xl border border-white/5 shadow-xl group hover:border-yellow-500/30 transition-all">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-yellow-500/10 text-yellow-500 rounded-2xl group-hover:scale-110 transition-transform"><i data-lucide="messages-square"></i></div>
+                                <span class="text-[10px] font-bold text-gray-600 uppercase tracking-widest">Unread</span>
+                            </div>
+                            <p id="stat-unread-messages" class="text-4xl font-black font-mono">0</p>
                         </div>
                     </div>
 
@@ -329,68 +346,8 @@
                      </div>
                 </section>
 
-                <!-- Edit Resource Modal -->
-                <div id="modal-edit-resource" class="bg-surface w-full max-w-xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
-                    <div class="p-8 border-b border-white/5 flex items-center justify-between bg-primary/10">
-                        <h3 class="text-xl font-bold uppercase tracking-tight text-primary">Edit Resource</h3>
-                        <button class="modal-close p-2 hover:bg-primary/10 rounded-xl transition-all text-primary"><i data-lucide="x"></i></button>
-                    </div>
-                    <div class="p-8 space-y-4">
-                        <div class="space-y-1">
-                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Title</label>
-                            <input id="edit-up-title" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="space-y-1">
-                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Category</label>
-                                <select id="edit-up-category" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold"></select>
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Class Level</label>
-                                <input id="edit-up-class" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
-                            </div>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">PDF URL</label>
-                            <input id="edit-up-pdf" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Thumbnail URL</label>
-                            <input id="edit-up-thumb" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Description</label>
-                            <textarea id="edit-up-desc" rows="3" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold"></textarea>
-                        </div>
-                        <div class="flex items-center gap-4 p-4 bg-background rounded-2xl border border-white/5">
-                            <span class="text-sm font-bold text-gray-400">Visibility Status</span>
-                            <div id="btn-toggle-visibility" class="flex items-center gap-2 cursor-pointer">
-                                <div id="visibility-toggle-track" class="w-12 h-6 bg-secondary rounded-full relative p-1">
-                                    <div id="visibility-toggle-thumb" class="w-4 h-4 bg-gray-500 rounded-full transition-all"></div>
-                                </div>
-                                <span id="visibility-label" class="text-[10px] font-bold uppercase text-gray-500">Hidden</span>
-                            </div>
-                        </div>
-                        <button id="btn-save-resource" class="w-full py-5 bg-primary text-secondary font-black rounded-2xl shadow-xl shadow-primary/20 transition-all uppercase tracking-widest mt-4">Save Changes</button>
-                    </div>
-                </div>
-
-                <!-- Edit Category Modal -->
-                <div id="modal-edit-category" class="bg-surface w-full max-w-md rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
-                    <div class="p-8 border-b border-white/5 flex items-center justify-between bg-primary/10">
-                        <h3 class="text-xl font-bold uppercase tracking-tight text-primary">Edit Category</h3>
-                        <button class="modal-close p-2 hover:bg-primary/10 rounded-xl transition-all text-primary"><i data-lucide="x"></i></button>
-                    </div>
-                    <div class="p-8 space-y-6">
-                        <div class="space-y-1">
-                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Category Name</label>
-                            <input id="edit-cat-name" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
-                        </div>
-                        <button id="btn-save-category" class="w-full py-5 bg-primary text-secondary font-black rounded-2xl shadow-xl shadow-primary/20 transition-all uppercase tracking-widest">Update Node</button>
-                    </div>
-                </div>
-
-                <!-- Upload Content -->
+                
+<!-- Upload Content -->
                 <section id="upload" class="tab-content">
                     <div class="max-w-2xl mx-auto bg-surface p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
                         <div class="text-center mb-10">
@@ -406,7 +363,7 @@
                                 <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Title</label>
                                 <input id="up-title" type="text" placeholder="Enter asset title" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-3 gap-4">
                                 <div class="space-y-1">
                                     <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Category</label>
                                     <select id="up-category" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all appearance-none"></select>
@@ -414,6 +371,10 @@
                                 <div class="space-y-1">
                                     <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Class Level</label>
                                     <input id="up-class" type="text" placeholder="Class Level" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Subject</label>
+                                    <input id="up-subject" type="text" placeholder="Subject" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold transition-all">
                                 </div>
                             </div>
                             <div class="space-y-1">
@@ -480,8 +441,46 @@
                     </div>
                 </section>
                 
+                                <section id="chat-manager" class="tab-content space-y-8">
+                    <div class="bg-surface p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
+                        <h3 class="text-2xl font-black uppercase tracking-tight mb-8">Chat Management</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                            <div class="p-6 bg-black rounded-xl border border-white/5 flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-bold">Global Chat</h4>
+                                    <p class="text-sm text-gray-500">Enable/Disable entire chat system</p>
+                                </div>
+                                <button id="toggle-chat-enabled" class="px-6 py-3 bg-primary text-secondary rounded-lg font-bold hover:brightness-110"><span id="chat-status-text">...</span></button>
+                            </div>
+                            <div class="p-6 bg-black rounded-xl border border-white/5 flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-bold">AI Assistant</h4>
+                                    <p class="text-sm text-gray-500">Enable/Disable AI in chats</p>
+                                </div>
+                                <button id="toggle-ai-enabled" class="px-6 py-3 bg-primary text-secondary rounded-lg font-bold hover:brightness-110">Toggle</button>
+                            </div>
+                            
+                            <div class="col-span-1 md:col-span-2 mt-4">
+                                <h4 class="text-lg font-black uppercase tracking-tight mb-4">Conversations</h4>
+                                <div id="admin-chat-groups" class="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
+                                    <div class="text-center text-gray-500 py-10"><i data-lucide="loader" class="animate-spin w-8 h-8 mx-auto mb-2"></i> Loading conversations...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <h4 class="text-lg font-black uppercase tracking-tight">Broadcast</h4>
+                            <div class="p-6 bg-black rounded-xl border border-white/5 space-y-4">
+                                <textarea id="broadcast-message" placeholder="Type announcement message..." class="w-full bg-white p-4 rounded-xl border border-gray-300 text-black font-semibold"></textarea>
+                                <button id="send-broadcast" class="w-full py-4 bg-primary text-secondary rounded-lg font-black hover:brightness-110">Send Broadcast</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
                 
+
                 <!-- Website Control Content -->
                 <section id="website-control" class="tab-content space-y-8">
                     <div class="bg-surface p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
@@ -757,9 +756,93 @@
                 <button id="btn-grant-premium" class="w-full py-5 bg-yellow-500 text-secondary font-black rounded-2xl shadow-xl shadow-yellow-500/20 hover:scale-[1.02] transition-all uppercase tracking-widest">Authorize Access</button>
             </div>
         </div>
+                <!-- Edit Resource Modal -->
+                <div id="modal-edit-resource" class="bg-surface w-full max-w-xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
+                    <div class="p-8 border-b border-white/5 flex items-center justify-between bg-primary/10">
+                        <h3 class="text-xl font-bold uppercase tracking-tight text-primary">Edit Resource</h3>
+                        <button class="modal-close p-2 hover:bg-primary/10 rounded-xl transition-all text-primary"><i data-lucide="x"></i></button>
+                    </div>
+                    <div class="p-8 space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Title</label>
+                            <input id="edit-up-title" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Category</label>
+                                <select id="edit-up-category" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold"></select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Class Level</label>
+                                <input id="edit-up-class" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Subject</label>
+                                <input id="edit-up-subject" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">PDF URL</label>
+                            <input id="edit-up-pdf" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Thumbnail URL</label>
+                            <input id="edit-up-thumb" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Description</label>
+                            <textarea id="edit-up-desc" rows="3" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold"></textarea>
+                        </div>
+                        <div class="flex items-center gap-4 p-4 bg-background rounded-2xl border border-white/5">
+                            <span class="text-sm font-bold text-gray-400">Visibility Status</span>
+                            <div id="btn-toggle-visibility" class="flex items-center gap-2 cursor-pointer">
+                                <div id="visibility-toggle-track" class="w-12 h-6 bg-secondary rounded-full relative p-1">
+                                    <div id="visibility-toggle-thumb" class="w-4 h-4 bg-gray-500 rounded-full transition-all"></div>
+                                </div>
+                                <span id="visibility-label" class="text-[10px] font-bold uppercase text-gray-500">Hidden</span>
+                            </div>
+                        </div>
+                        <button id="btn-save-resource" class="w-full py-5 bg-primary text-secondary font-black rounded-2xl shadow-xl shadow-primary/20 transition-all uppercase tracking-widest mt-4">Save Changes</button>
+                    </div>
+                </div>
+
+
+                <!-- Community Chat Modal -->
+                <div id="modal-community-chat" class="bg-surface w-full max-w-4xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
+                    <div class="p-8 border-b border-white/5 flex items-center justify-between bg-primary/10">
+                        <h3 class="text-xl font-bold uppercase tracking-tight text-primary">Community Chat Moderation</h3>
+                        <div class="flex items-center gap-2">
+                            <button id="btn-mark-read" class="px-4 py-2 bg-primary/20 text-primary hover:bg-primary hover:text-white rounded-lg transition-all" title="Mark as Read"><i data-lucide="check-check" class="w-5 h-5"></i></button>
+                            <button id="btn-delete-entire-chat" class="px-4 py-2 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all hidden" title="Delete Chat"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                            <button class="modal-close p-2 hover:bg-primary/10 rounded-xl transition-all text-primary"><i data-lucide="x"></i></button>
+                        </div>
+                    </div>
+                    <div class="p-8 flex flex-col h-[60vh]">
+                        <div id="admin-chat-messages" class="flex-1 overflow-y-auto space-y-4 mb-4 pr-2">
+                            <!-- Messages go here -->
+                            <div class="text-center text-gray-500 py-10"><i data-lucide="loader" class="animate-spin w-8 h-8 mx-auto mb-2"></i> Loading messages...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Category Modal -->
+                <div id="modal-edit-category" class="bg-surface w-full max-w-md rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
+                    <div class="p-8 border-b border-white/5 flex items-center justify-between bg-primary/10">
+                        <h3 class="text-xl font-bold uppercase tracking-tight text-primary">Edit Category</h3>
+                        <button class="modal-close p-2 hover:bg-primary/10 rounded-xl transition-all text-primary"><i data-lucide="x"></i></button>
+                    </div>
+                    <div class="p-8 space-y-6">
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Category Name</label>
+                            <input id="edit-cat-name" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <button id="btn-save-category" class="w-full py-5 bg-primary text-secondary font-black rounded-2xl shadow-xl shadow-primary/20 transition-all uppercase tracking-widest">Update Node</button>
+                    </div>
+                </div>
+
     </div>
 
-    <!-- Notifications -->
+        <!-- Notifications -->
     <div id="toast-container" class="fixed bottom-10 right-10 z-[2000] flex flex-col gap-3"></div>
 
     <!-- Firebase SDKs -->
@@ -786,6 +869,9 @@
         window.doc = doc;
         window.getDoc = getDoc;
         window.setDoc = setDoc;
+        window.updateDoc = updateDoc;
+        window.deleteDoc = deleteDoc;
+        window.serverTimestamp = serverTimestamp;
 
         // UI STATE
         let currentUser = null;
@@ -895,14 +981,313 @@
             }, 3000);
         }
 
+        // --- CHAT MANAGER ---
+        let chatEnabled = false;
+        let aiEnabled = false;
+        let communityChatUnsubscribe = null;
+
+        async function loadChatSettings() {
+            try {
+                const docRef = doc(db, 'website_control', 'settings');
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    chatEnabled = !!data.chatEnabled;
+                    aiEnabled = !!data.aiEnabled;
+                }
+                
+                document.getElementById('chat-status-text').textContent = chatEnabled ? 'Enabled' : 'Disabled';
+                document.getElementById('chat-status-text').className = chatEnabled ? 'text-green-300' : 'text-red-300';
+                
+                document.getElementById('toggle-ai-enabled').textContent = aiEnabled ? 'Enabled' : 'Disabled';
+                document.getElementById('toggle-ai-enabled').className = aiEnabled ? 'px-6 py-3 bg-green-500/20 text-green-300 rounded-lg font-bold hover:brightness-110 border border-green-500/30' : 'px-6 py-3 bg-red-500/20 text-red-300 rounded-lg font-bold hover:brightness-110 border border-red-500/30';
+                loadChatGroups();
+
+            } catch (e) {
+                console.error("Error loading chat settings", e);
+            }
+        }
+
+        document.getElementById('toggle-chat-enabled').addEventListener('click', async () => {
+            chatEnabled = !chatEnabled;
+            try {
+                await setDoc(doc(db, 'website_control', 'settings'), { chatEnabled }, { merge: true });
+                toast('Chat system ' + (chatEnabled ? 'enabled' : 'disabled'), 'success');
+                loadChatSettings();
+            } catch (e) {
+                toast('Error updating chat settings', 'error');
+            }
+        });
+
+        document.getElementById('toggle-ai-enabled').addEventListener('click', async () => {
+            aiEnabled = !aiEnabled;
+            try {
+                await setDoc(doc(db, 'website_control', 'settings'), { aiEnabled }, { merge: true });
+                toast('AI Chat ' + (aiEnabled ? 'enabled' : 'disabled'), 'success');
+                loadChatSettings();
+            } catch (e) {
+                toast('Error updating AI chat settings', 'error');
+            }
+        });
+
+        document.getElementById('send-broadcast').addEventListener('click', async () => {
+            const msg = document.getElementById('broadcast-message').value.trim();
+            if (!msg) return toast('Please enter a message', 'error');
+            try {
+                const chatRef = collection(db, 'chats', 'community', 'messages');
+                await setDoc(doc(chatRef), {
+                    content: msg,
+                    senderId: 'admin',
+                    senderName: 'Admin Broadcast',
+                    senderAvatar: '',
+                    timestamp: serverTimestamp(),
+                    isBroadcast: true
+                });
+                document.getElementById('broadcast-message').value = '';
+                toast('Broadcast sent successfully', 'success');
+            } catch(e) {
+                console.error(e);
+                toast('Error sending broadcast', 'error');
+            }
+        });
+
+        const modalCommunityChat = document.getElementById('modal-community-chat');
+
+        async function loadChatGroups() {
+            try {
+                const q = query(collection(db, 'chats'));
+                const snapshot = await getDocs(q);
+                const container = document.getElementById('admin-chat-groups');
+                container.innerHTML = '';
+                
+                let foundCommunity = false;
+                const groups = [];
+                snapshot.forEach(docSnap => {
+                    if (docSnap.id === 'community') foundCommunity = true;
+                    groups.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                
+                if (!foundCommunity) {
+                    groups.unshift({ id: 'community', name: 'NotesHub9 Community', isDefault: true });
+                }
+                
+                if (groups.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-500 py-10">No conversations found</div>';
+                    return;
+                }
+
+                // Fetch latest message for each group
+                for (let group of groups) {
+                    try {
+                        const msgQ = query(collection(db, 'chats', group.id, 'messages'), orderBy('timestamp', 'desc'), limit(1));
+                        const msgSnap = await getDocs(msgQ);
+                        if (!msgSnap.empty) {
+                            const msgData = msgSnap.docs[0].data();
+                            group.lastMessage = msgData.content || msgData.text || 'No text';
+                            group.lastMessageTime = msgData.timestamp?.toDate ? msgData.timestamp.toDate().toLocaleString() : 'Recent';
+                        } else {
+                            group.lastMessage = 'No messages';
+                            group.lastMessageTime = 'N/A';
+                        }
+                    } catch (e) {
+                        group.lastMessage = 'Unknown';
+                        group.lastMessageTime = '';
+                    }
+                }
+                
+                groups.forEach(group => {
+                    let title = group.name || group.id;
+                    let subtitle = '';
+                    if (group.id !== 'community' && group.participants && group.participants.length >= 2) {
+                        const u1 = usersData.find(u => u.uid === group.participants[0]);
+                        const u2 = usersData.find(u => u.uid === group.participants[1]);
+                        const n1 = u1 ? (u1.displayName || u1.name || u1.email || group.participants[0]) : group.participants[0];
+                        const n2 = u2 ? (u2.displayName || u2.name || u2.email || group.participants[1]) : group.participants[1];
+                        title = `${n1} & ${n2}`;
+                        subtitle = `Emails: ${u1?.email || 'N/A'} | ${u2?.email || 'N/A'}`;
+                    } else if (group.id === 'community') {
+                        subtitle = 'Public Community Group';
+                    } else {
+                        subtitle = 'Private/Group Chat';
+                    }
+
+                    const el = document.createElement('div');
+                    el.className = "p-4 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 flex items-center justify-between cursor-pointer transition-all";
+                    el.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-primary/20 text-primary rounded-xl flex items-center justify-center font-bold shrink-0">
+                                <i data-lucide="message-square" class="w-5 h-5"></i>
+                            </div>
+                            <div class="overflow-hidden">
+                                <h5 class="font-bold text-lg truncate">${title}</h5>
+                                <p class="text-xs text-gray-400 truncate">${subtitle}</p>
+                                <p class="text-sm text-gray-300 mt-1 truncate">Last: ${group.lastMessage}</p>
+                                <p class="text-[10px] text-gray-500">${group.lastMessageTime}</p>
+                            </div>
+                        </div>
+                        <button class="btn-manage-chat px-6 py-2 bg-primary text-secondary font-bold rounded-lg shrink-0" data-id="${group.id}">Manage</button>
+                    `;
+                    container.appendChild(el);
+                });
+                
+                lucide.createIcons();
+                
+                container.querySelectorAll('.btn-manage-chat').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const chatId = e.currentTarget.getAttribute('data-id');
+                        openChatModeration(chatId);
+                    });
+                });
+                
+            } catch (e) {
+                console.error(e);
+                document.getElementById('admin-chat-groups').innerHTML = '<div class="text-red-500 text-center py-10">Error loading conversations</div>';
+            }
+        }
+        
+        function openChatModeration(chatId) {
+            modalContainer.classList.remove('hidden');
+            modalCommunityChat.classList.remove('hidden');
+            setTimeout(() => modalCommunityChat.classList.remove('scale-95', 'opacity-0'), 10);
+            
+            const titleEl = modalCommunityChat.querySelector('h3');
+            titleEl.textContent = chatId === 'community' ? 'NotesHub9 Community' : `Chat: ${chatId}`;
+            
+            const btnMarkRead = document.getElementById('btn-mark-read');
+            btnMarkRead.onclick = async () => {
+                try {
+                    const currentUser = auth.currentUser;
+                    if (currentUser) {
+                        await updateDoc(doc(db, 'users', currentUser.uid), {
+                            [`lastReadChats.${chatId}`]: serverTimestamp()
+                        });
+                        toast('Marked as read', 'success');
+                    }
+                } catch (e) {
+                    toast('Error marking as read', 'error');
+                }
+            };
+            
+            const btnDeleteEntire = document.getElementById('btn-delete-entire-chat');
+            if (chatId === 'community') {
+                btnDeleteEntire.classList.add('hidden');
+            } else {
+                btnDeleteEntire.classList.remove('hidden');
+                btnDeleteEntire.onclick = async () => {
+                    if (confirm('Are you sure you want to delete this entire conversation?')) {
+                        try {
+                            const msgs = await getDocs(collection(db, 'chats', chatId, 'messages'));
+                            for (let m of msgs.docs) {
+                                await deleteDoc(m.ref);
+                            }
+                            await deleteDoc(doc(db, 'chats', chatId));
+                            toast('Chat deleted completely', 'success');
+                            closeModal();
+                            loadChatGroups();
+                        } catch (e) {
+                            toast('Error deleting chat', 'error');
+                        }
+                    }
+                };
+            }
+
+            // Unsubscribe from previous if any
+            if (typeof communityChatUnsubscribe !== "undefined" && communityChatUnsubscribe) {
+                communityChatUnsubscribe();
+            }
+            
+            const container = document.getElementById('admin-chat-messages');
+            container.innerHTML = '<div class="text-center text-gray-500 py-10"><i data-lucide="loader" class="animate-spin w-8 h-8 mx-auto mb-2"></i> Loading messages...</div>';
+            lucide.createIcons();
+            
+            // Listen to messages
+            const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('timestamp', 'desc'), limit(100));
+            communityChatUnsubscribe = onSnapshot(q, (snapshot) => {
+                container.innerHTML = '';
+                if(snapshot.empty) {
+                    container.innerHTML = '<div class="text-center text-gray-500 py-10">No messages found</div>';
+                    return;
+                }
+                
+                snapshot.forEach(docSnap => {
+                    const msg = docSnap.data();
+                    // Resolve user names using usersData fallback
+                    let senderName = msg.senderName;
+                    let senderAvatar = msg.senderAvatar;
+                    if (!senderName && msg.senderId) {
+                        const u = usersData.find(u => u.uid === msg.senderId);
+                        if (u) {
+                            senderName = u.displayName || u.name || u.email;
+                            senderAvatar = u.photoURL || u.avatar;
+                        } else {
+                            senderName = msg.senderId;
+                        }
+                    }
+
+                    const el = document.createElement('div');
+                    el.className = "p-4 bg-white/5 rounded-xl border border-white/5 flex gap-4 relative group";
+                    el.innerHTML = `
+                        <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary shrink-0 overflow-hidden">
+                            ${senderAvatar ? '<img src="' + senderAvatar + '" class="w-full h-full object-cover">' : (senderName ? senderName.substring(0, 1).toUpperCase() : 'U')}
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-bold">${senderName || 'Anonymous'}</span>
+                                <span class="text-[10px] text-gray-500">${msg.timestamp?.toDate ? msg.timestamp.toDate().toLocaleString() : 'Just now'}</span>
+                                ${msg.isBroadcast ? '<span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-500 text-[10px] uppercase font-bold rounded">Broadcast</span>' : ''}
+                            </div>
+                            <p class="text-gray-300 text-sm whitespace-pre-wrap">${msg.content || msg.text || ''}</p>
+                        </div>
+                        <div class="opacity-0 group-hover:opacity-100 transition-all absolute right-4 top-4 flex gap-2">
+                            <button class="btn-delete-msg p-2 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all" data-id="${docSnap.id}" title="Delete Message">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                            ${msg.senderId !== 'admin' ? `
+                            <button class="btn-ban-user p-2 bg-orange-500/20 text-orange-500 hover:bg-orange-500 hover:text-white rounded-lg transition-all" data-uid="${msg.senderId}" title="Ban/Mute User">
+                                <i data-lucide="user-x" class="w-4 h-4"></i>
+                            </button>
+                            ` : ''}
+                        </div>
+                    `;
+                    container.appendChild(el);
+                });
+                lucide.createIcons();
+                
+                // Attach event listeners using delegation
+                container.addEventListener('click', async (e) => {
+                    const deleteBtn = e.target.closest('.btn-delete-msg');
+                    const banBtn = e.target.closest('.btn-ban-user');
+                    
+                    if (deleteBtn) {
+                        const id = deleteBtn.getAttribute('data-id');
+                        if (confirm('Delete this message?')) {
+                            await deleteDoc(doc(db, 'chats', chatId, 'messages', id));
+                            toast('Message deleted', 'success');
+                        }
+                    } else if (banBtn) {
+                        const uid = banBtn.getAttribute('data-uid');
+                        const user = usersData.find(u => u.uid === uid);
+                        if(user) {
+                            closeModal();
+                            setTimeout(() => openUserModal(uid), 350);
+                        } else {
+                            toast('User data not found', 'error');
+                        }
+                    }
+                });
+            });
+        }
+
         // INITIALIZATION
         async function initApp() {
             lucide.createIcons();
             startListeners();
             loadCreatorData();
             loadWebsiteControl();
+                loadChatSettings();
             loadAiConfig();
             loadAiSupportAnalytics();
+            loadAiStatus();
         }
 
         async function loadAiSupportAnalytics() {
@@ -914,12 +1299,12 @@
                 document.getElementById('stat-failed-replies').innerText = data.failedReplies || 0;
                 document.getElementById('stat-last-email').innerText = data.lastReceivedEmail ? new Date(data.lastReceivedEmail).toLocaleTimeString() : 'No emails yet';
                 document.getElementById('stat-last-reply').innerText = data.lastAIReplyTime ? new Date(data.lastAIReplyTime).toLocaleTimeString() : 'No activity';
-            });
+            }, (error) => console.warn('Snapshot error (analytics/summary):', error));
 
             // Pending reviews count
             onSnapshot(collection(db, 'pendingReviews'), (snapshot) => {
                 document.getElementById('stat-pending-emails').innerText = snapshot.size;
-            });
+            }, (error) => console.warn('Snapshot error (pendingReviews size):', error));
 
             // Recent activity
             const logsQuery = query(collection(db, 'emailLogs'), orderBy('timestamp', 'desc'), limit(10));
@@ -940,7 +1325,7 @@
                     `;
                     logsDiv.appendChild(logEl);
                 });
-            });
+            }, (error) => console.warn('Snapshot error (logsQuery):', error));
 
             // Pending reviews
             const pendingQuery = query(collection(db, 'pendingReviews'), orderBy('timestamp', 'desc'), limit(10));
@@ -961,7 +1346,7 @@
                     `;
                     pendingDiv.appendChild(reviewEl);
                 });
-            });
+            }, (error) => console.warn('Snapshot error (pendingQuery):', error));
         }
 
         async function loadAiConfig() {
@@ -1100,7 +1485,7 @@
                 updatePremiumAnalytics();
                 updatePremiumUsersList();
                 checkExpirations(); // Auto-revocation logic
-            });
+            }, (error) => console.warn('Snapshot error (users):', error));
 
             // RESOURCES LISTENER
             onSnapshot(collection(db, 'resources'), (snap) => {
@@ -1108,14 +1493,14 @@
                 updateDashboardStats();
                 updateResourcesList();
                 updateUploadCategories();
-            });
+            }, (error) => console.warn('Snapshot error (resources):', error));
 
             // CATEGORIES LISTENER
             onSnapshot(query(collection(db, 'categories'), orderBy('name')), (snap) => {
                 categoriesData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 updateCategoriesGrid();
                 updateUploadCategories();
-            });
+            }, (error) => console.warn('Snapshot error (categories):', error));
         }
 
         // AUTO-REVOCATION LOGIC
@@ -1324,10 +1709,15 @@
                     </div>
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2">
-                            <h5 class="text-white font-bold truncate">${r.title}</h5>
+                            <h5 class="text-white font-bold truncate">${r.title || r.name || 'Untitled Resource'}</h5>
                             ${r.isHidden ? '<span class="text-[8px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded font-bold uppercase">Hidden</span>' : ''}
                         </div>
-                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">${r.category || 'N/A'}</p>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
+                          ${categoriesData.find(c => c.id === r.category)?.name || r.category || 'N/A'} • ${r.classLevel || 'N/A'} • ${r.subject || 'N/A'}
+                        </p>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+                          Upload: ${r.createdAt?.toDate ? r.createdAt.toDate().toLocaleDateString() : 'N/A'}
+                        </p>
                         <div class="flex gap-4 mt-2">
                              <div class="flex items-center gap-1 text-[10px] text-gray-400 font-mono"><i data-lucide="eye" class="w-3 h-3"></i> ${r.viewCount || 0}</div>
                              <div class="flex items-center gap-1 text-[10px] text-gray-400 font-mono"><i data-lucide="download" class="w-3 h-3"></i> ${r.downloadCount || 0}</div>
@@ -1478,12 +1868,13 @@
         const modalEditCategory = document.getElementById('modal-edit-category');
 
         function closeModal() {
-            [modalUser, modalPremium, modalEditResource, modalEditCategory].forEach(m => {
+            [modalUser, modalPremium, modalEditResource, modalEditCategory, modalCommunityChat].forEach(m => {
                 m.classList.add('scale-95', 'opacity-0');
             });
             setTimeout(() => {
                 modalContainer.classList.add('hidden');
-                [modalUser, modalPremium, modalEditResource, modalEditCategory].forEach(m => m.classList.add('hidden'));
+                [modalUser, modalPremium, modalEditResource, modalEditCategory, modalCommunityChat].forEach(m => m.classList.add('hidden'));
+                if (typeof communityChatUnsubscribe !== "undefined" && communityChatUnsubscribe) { communityChatUnsubscribe(); communityChatUnsubscribe = null; }
             }, 300);
         }
 
@@ -1492,13 +1883,21 @@
         let editingResourceIsHidden = false;
 
         window.openEditResourceModal = (id) => {
+            console.log('Opening edit modal for:', id);
             editingResourceId = id;
             const r = resourcesData.find(x => x.id === id);
+            console.log('Resource data found:', r);
             if (!r) return;
 
-            document.getElementById('edit-up-title').value = r.title;
+            if (!modalContainer || !modalEditResource) {
+                console.error('Modal elements not found:', { modalContainer, modalEditResource });
+                return;
+            }
+
+            document.getElementById('edit-up-title').value = r.title || r.name || '';
             document.getElementById('edit-up-category').value = r.category || '';
             document.getElementById('edit-up-class').value = r.classLevel || '';
+            document.getElementById('edit-up-subject').value = r.subject || '';
             document.getElementById('edit-up-pdf').value = r.pdfUrl;
             document.getElementById('edit-up-thumb').value = r.thumbnailUrl || '';
             document.getElementById('edit-up-desc').value = r.description || '';
@@ -1554,6 +1953,7 @@
                 title: document.getElementById('edit-up-title').value,
                 category: document.getElementById('edit-up-category').value,
                 classLevel: document.getElementById('edit-up-class').value,
+                subject: document.getElementById('edit-up-subject').value,
                 pdfUrl: document.getElementById('edit-up-pdf').value,
                 thumbnailUrl: document.getElementById('edit-up-thumb').value,
                 description: document.getElementById('edit-up-desc').value,
@@ -1806,6 +2206,7 @@
             const title = document.getElementById('up-title').value;
             const cat = document.getElementById('up-category').value;
             const classLevel = document.getElementById('up-class').value;
+            const subject = document.getElementById('up-subject').value;
             const pdf = document.getElementById('up-pdf').value;
             const thumb = document.getElementById('up-thumb').value;
             const desc = document.getElementById('up-desc').value;
@@ -1818,6 +2219,7 @@
                     title,
                     category: cat,
                     classLevel,
+                    subject,
                     pdfUrl: pdf,
                     thumbnailUrl: thumb,
                     description: desc,
@@ -1915,8 +2317,6 @@
         document.getElementById('res-search').addEventListener('input', updateResourcesList);
         document.getElementById('refresh-users').addEventListener('click', updateUsersTable);
         
-        loadAiStatus();
-
     </script>
 </body>
 </html>

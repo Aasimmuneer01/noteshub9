@@ -1,0 +1,64 @@
+                <!-- Edit Resource Modal -->
+                <div id="modal-edit-resource" class="bg-surface w-full max-w-xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
+                    <div class="p-8 border-b border-white/5 flex items-center justify-between bg-primary/10">
+                        <h3 class="text-xl font-bold uppercase tracking-tight text-primary">Edit Resource</h3>
+                        <button class="modal-close p-2 hover:bg-primary/10 rounded-xl transition-all text-primary"><i data-lucide="x"></i></button>
+                    </div>
+                    <div class="p-8 space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Title</label>
+                            <input id="edit-up-title" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Category</label>
+                                <select id="edit-up-category" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold"></select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Class Level</label>
+                                <input id="edit-up-class" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Subject</label>
+                                <input id="edit-up-subject" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">PDF URL</label>
+                            <input id="edit-up-pdf" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Thumbnail URL</label>
+                            <input id="edit-up-thumb" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Description</label>
+                            <textarea id="edit-up-desc" rows="3" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold"></textarea>
+                        </div>
+                        <div class="flex items-center gap-4 p-4 bg-background rounded-2xl border border-white/5">
+                            <span class="text-sm font-bold text-gray-400">Visibility Status</span>
+                            <div id="btn-toggle-visibility" class="flex items-center gap-2 cursor-pointer">
+                                <div id="visibility-toggle-track" class="w-12 h-6 bg-secondary rounded-full relative p-1">
+                                    <div id="visibility-toggle-thumb" class="w-4 h-4 bg-gray-500 rounded-full transition-all"></div>
+                                </div>
+                                <span id="visibility-label" class="text-[10px] font-bold uppercase text-gray-500">Hidden</span>
+                            </div>
+                        </div>
+                        <button id="btn-save-resource" class="w-full py-5 bg-primary text-secondary font-black rounded-2xl shadow-xl shadow-primary/20 transition-all uppercase tracking-widest mt-4">Save Changes</button>
+                    </div>
+                </div>
+
+                <!-- Edit Category Modal -->
+                <div id="modal-edit-category" class="bg-surface w-full max-w-md rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden hidden transform transition-all scale-95 opacity-0">
+                    <div class="p-8 border-b border-white/5 flex items-center justify-between bg-primary/10">
+                        <h3 class="text-xl font-bold uppercase tracking-tight text-primary">Edit Category</h3>
+                        <button class="modal-close p-2 hover:bg-primary/10 rounded-xl transition-all text-primary"><i data-lucide="x"></i></button>
+                    </div>
+                    <div class="p-8 space-y-6">
+                        <div class="space-y-1">
+                            <label class="text-[10px] text-gray-500 font-bold uppercase ml-4">Category Name</label>
+                            <input id="edit-cat-name" type="text" class="w-full bg-white border border-gray-300 rounded-2xl px-6 py-4 outline-none focus:border-primary text-black font-semibold">
+                        </div>
+                        <button id="btn-save-category" class="w-full py-5 bg-primary text-secondary font-black rounded-2xl shadow-xl shadow-primary/20 transition-all uppercase tracking-widest">Update Node</button>
+                    </div>
+                </div>

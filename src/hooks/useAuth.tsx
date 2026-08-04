@@ -202,10 +202,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (err: any) {
           console.error("Error in fetchUserDoc:", err);
-          if (retries > 0 && err.message?.includes('offline')) {
-             console.warn('Firestore offline, retrying...');
+          // Proper error handling: only retry on transient network errors, not on permission/other errors
+          const isTransientError = err.code === 'unavailable' || err.message?.includes('offline') || err.message?.includes('network');
+          if (retries > 0 && isTransientError) {
+             console.warn('Transient Firestore error, retrying...', err);
              await new Promise(r => setTimeout(r, 2000));
              return fetchUserDoc(retries - 1);
+          } else {
+            console.error('Non-retriable Firestore error or exhausted retries:', err);
+            setLoading(false); // Stop loading if we fail
           }
         }
       };

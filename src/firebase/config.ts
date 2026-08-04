@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
-import { initializeFirestore, getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { initializeFirestore, getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -11,6 +11,12 @@ const firebaseConfig = {
   messagingSenderId: "499105267177",
   appId: "1:499105267177:web:d88137205e617e294c1f78"
 };
+
+// Log configuration (excluding full API key)
+console.log('Firebase Configuration:', {
+  ...firebaseConfig,
+  apiKey: firebaseConfig.apiKey ? firebaseConfig.apiKey.substring(0, 5) + '...' : 'N/A'
+});
 
 const app = initializeApp(firebaseConfig);
 
@@ -24,20 +30,6 @@ export const db = initializeFirestore(app, {
 });
 
 export const storage = getStorage(app);
-
-/*
-try {
-  enableIndexedDbPersistence(db);
-} catch (err: any) {
-  if (err.code === 'failed-precondition') {
-    // Multiple tabs open, persistence can only be enabled in one tab at a time.
-    console.warn('Persistence failed: Multiple tabs open.');
-  } else if (err.code === 'unimplemented') {
-    // The current browser does not support all of the features required to enable persistence
-    console.warn('Persistence failed: Not supported in this browser.');
-  }
-}
-*/
 
 storage.maxUploadRetryTime = 10000;
 storage.maxOperationRetryTime = 10000;

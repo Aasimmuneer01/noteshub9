@@ -6,10 +6,12 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase/config';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
+import UnreadNotification from './components/UnreadNotification';
+import BroadcastNotification from './components/BroadcastNotification';
 import Home from './pages/Home';
 import Resources from './pages/Resources';
 import PDFViewer from './components/PDFViewer';
@@ -18,6 +20,7 @@ import Folders from './pages/Folders';
 import OfflineLibrary from './pages/OfflineLibrary';
 import AIAssistant from './pages/AIAssistant';
 import AIChatHistory from './pages/AIChatHistory';
+import Chat from './pages/Chat';
 import AdminPage from './pages/Admin';
 import Profile from './pages/Profile';
 import { AuthProvider, useAuth } from './hooks/useAuth';
@@ -79,7 +82,16 @@ function MainLayout() {
 
   return (
     <div className="min-h-screen bg-background-main text-text-main flex flex-col">
-      {showPopup && <NewFeaturePopup version="1.0" onClose={() => setShowPopup(false)} />}
+      {showPopup && <NewFeaturePopup version="1.0" onClose={() => {
+        setShowPopup(false);
+        if (user) {
+          updateDoc(doc(db, 'users', user.uid), {
+            lastPopupVersion: '1.0'
+          });
+        }
+      }} />}
+      <UnreadNotification />
+      <BroadcastNotification />
       <Navbar />
       <main className="flex-1 overflow-auto pt-16">
         <Routes>
@@ -90,6 +102,7 @@ function MainLayout() {
           <Route path="/offline" element={<OfflineLibrary />} />
           <Route path="/ai-assistant" element={<AIAssistant />} />
           <Route path="/ai-history" element={<AIChatHistory />} />
+          <Route path="/chat" element={<Chat />} />
           {isAdmin && <Route path="/admin" element={<AdminPage />} />}
           <Route path="/profile" element={<Profile />} />
           <Route path="/viewer/:resourceId" element={<PDFViewer />} />
@@ -112,6 +125,7 @@ function MainLayout() {
 export default function App() {
   const [shutdownSettings, setShutdownSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isFirestoreOnline, setIsFirestoreOnline] = useState(true);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'website_control', 'settings'), (docSnap) => {
@@ -120,9 +134,11 @@ export default function App() {
       } else {
         setShutdownSettings({ mode: 'Online' });
       }
+      setIsFirestoreOnline(true);
       setLoading(false);
     }, (error) => {
       console.error("Website control listener error:", error);
+      setIsFirestoreOnline(false);
       setLoading(false);
     });
     return unsub;
@@ -132,6 +148,17 @@ export default function App() {
     return (
       <div className="min-h-screen bg-background-main flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  if (!isFirestoreOnline) {
+    return (
+      <div className="min-h-screen bg-background-main flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold text-text-main">Connecting to NotesHub9...</h2>
+        </div>
       </div>
     );
   }
