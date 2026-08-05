@@ -18,6 +18,13 @@ export default function Home() {
     bgImage: 'https://images.unsplash.com/photo-1513258496099-48168024aec0?q=80&w=800&auto=format&fit=crop'
   });
   const [latestResources, setLatestResources] = useState<Resource[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const handleUnread = (e: any) => setUnreadCount(e.detail);
+    window.addEventListener('unreadMessagesUpdate', handleUnread);
+    return () => window.removeEventListener('unreadMessagesUpdate', handleUnread);
+  }, []);
 
   useEffect(() => {
     const fetchHomepageSettings = async () => {
@@ -79,9 +86,14 @@ export default function Home() {
         
         {/* Chat Button */}
         <div className="mb-4">
-           <Link to="/chat" className="flex items-center justify-center gap-2 w-full max-w-lg mx-auto py-3 bg-surface border border-secondary rounded-2xl text-text-main font-bold hover:border-primary transition-all">
+           <Link to="/chat" className="flex items-center justify-center gap-2 w-full max-w-lg mx-auto py-3 bg-surface border border-secondary rounded-2xl text-text-main font-bold hover:border-primary transition-all relative">
              <MessageSquare size={20} />
              Open Chat
+             {unreadCount > 0 && (
+                 <span className="absolute -top-2 -right-2 px-2.5 py-1 bg-red-500 text-white text-xs font-bold rounded-full border-2 border-background-main shadow-lg">
+                   {unreadCount}
+                 </span>
+             )}
            </Link>
         </div>
         

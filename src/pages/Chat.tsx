@@ -19,6 +19,11 @@ export default function Chat() {
   const lastReadCommunity = userData?.lastReadChats?.community;
 
   useEffect(() => {
+    localStorage.setItem('activeChat', activeChat);
+    return () => localStorage.removeItem('activeChat');
+  }, [activeChat]);
+
+  useEffect(() => {
     if (!user) return;
     const unsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
       if (docSnap.exists()) {

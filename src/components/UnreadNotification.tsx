@@ -15,12 +15,15 @@ export default function UnreadNotification() {
   useEffect(() => {
     if (!user || !userData) return;
 
-    // Listen to all chats the user is part of
+    // Listen to all chats the user is part of + community chat
     const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', user.uid));
     
     const unsubChats = onSnapshot(chatsQuery, (snapshot) => {
-        const messageUnsubs = snapshot.docs.map(chatDoc => {
-            const chatId = chatDoc.id;
+        // Collect chat IDs, ensuring 'community' is included
+        const chatIds = new Set(snapshot.docs.map(doc => doc.id));
+        chatIds.add('community');
+        
+        const messageUnsubs = Array.from(chatIds).map(chatId => {
             const path = chatId === 'community' ? 'chats/community/messages' : `chats/${chatId}/messages`;
             const q = query(collection(db, path), orderBy('timestamp', 'desc'));
             
@@ -28,15 +31,29 @@ export default function UnreadNotification() {
                 const lastRead = userData.lastReadChats?.[chatId] || new Timestamp(0, 0);
                 const newMessages = msgSnapshot.docs
                     .map(doc => ({ id: doc.id, chatId, ...doc.data() } as any))
-                    .filter(msg => msg.timestamp && msg.timestamp > lastRead && msg.senderId !== user.uid && !msg.isBroadcast);
+                    .filter(msg => msg.timestamp && msg.timestamp > lastRead && msg.senderId !== user.uid);
                 
-                if (newMessages.length > 0) {
-                  setUnreadMessages(prev => {
-                    const filtered = prev.filter(m => m.chatId !== chatId);
-                    return [...filtered, ...newMessages];
-                  });
-                  setShowNotification(true);
-                }
+                setUnreadMessages(prev => {
+                  const filtered = prev.filter(m => m.chatId !== chatId);
+                  const updated = [...filtered, ...newMessages];
+                  
+                  // Only show popup if there are new unread messages and we are NOT currently looking at this chat
+                  // But since we can't easily check current active chat here, we just show notification if updated has items
+                  // We'll handle suppressing the popup if they are in the chat by checking window.location.pathname? No, the prompt says:
+                  // "If the user is already viewing the Community chat, do not show the popup, but mark the message as read automatically."
+                  if (newMessages.length > 0) {
+                     const isCurrentlyInChat = window.location.pathname === '/chat' && localStorage.getItem('activeChat') === chatId;
+                     if (isCurrentlyInChat) {
+                         updateDoc(doc(db, 'users', user.uid), {
+                           [`lastReadChats.${chatId}`]: serverTimestamp()
+                         });
+                     } else {
+                         setShowNotification(true);
+                     }
+                  }
+                  
+                  return updated;
+                });
             });
         });
         return () => messageUnsubs.forEach(unsub => unsub());
@@ -44,6 +61,10 @@ export default function UnreadNotification() {
     
     return unsubChats;
   }, [user, userData]);
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('unreadMessagesUpdate', { detail: unreadMessages.length }));
+  }, [unreadMessages]);
 
   return (
     <AnimatePresence>
@@ -69,7 +90,7 @@ export default function UnreadNotification() {
               <p className="font-bold mb-2">New messages:</p>
               {unreadMessages.slice(0, 3).map(msg => (
                 <div key={msg.id} className="mb-2 p-2 bg-gray-100 rounded">
-                  <p><strong>{msg.senderId.slice(0, 8)}...:</strong> {msg.text.slice(0, 20)}...</p>
+                  <p><strong>{msg.senderName || (msg.senderId ? String(msg.senderId).slice(0, 8) : 'Unknown')}:</strong> {(msg.content || msg.text || '').slice(0, 30)}...</p>
                 </div>
               ))}
               {unreadMessages.length > 3 && <p>...and {unreadMessages.length - 3} more.</p>}
