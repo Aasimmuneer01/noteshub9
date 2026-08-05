@@ -207,30 +207,30 @@ export default function Chat() {
               );
             }
             return (
-              <div key={msg.id} className={`mb-4 ${msg.senderId === user?.uid ? 'text-right' : 'text-left'}`}>
-                <div className={`inline-block p-3 rounded-2xl relative group ${msg.senderId === user?.uid ? 'bg-primary text-white' : 'bg-secondary text-text-main'}`}>
-                  {msg.deleted ? (
-                    <span className="italic text-sm opacity-70">This message was deleted.</span>
-                  ) : (
-                    <>
-                      {msg.text}
-                      {!msg.deleted && msg.senderId === user?.uid && (
-                        <button 
-                          onClick={() => {
-                            const path = activeChat === 'community' ? 'chats/community/messages' : `chats/${activeChat}/messages`;
-                            updateDoc(doc(db, path, msg.id), {
-                              deleted: true,
-                              text: "This message was deleted."
-                            });
-                          }}
-                          className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 p-1"
-                          title="Delete for everyone"
-                        >
-                          <Ban size={16} />
-                        </button>
-                      )}
-                    </>
+              <div key={msg.id} className={`mb-4 flex flex-col ${msg.senderId === user?.uid ? 'items-end text-right' : 'items-start text-left'}`}>
+                <div className="group relative flex items-center gap-2">
+                  {msg.senderId === user?.uid && !msg.deleted && (
+                    <button 
+                      onClick={() => {
+                        const path = activeChat === 'community' ? 'chats/community/messages' : `chats/${activeChat}/messages`;
+                        updateDoc(doc(db, path, msg.id), {
+                          deleted: true,
+                          text: "This message was deleted."
+                        });
+                      }}
+                      className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 p-2 transition-opacity"
+                      title="Delete for everyone"
+                    >
+                      <Ban size={16} />
+                    </button>
                   )}
+                  <div className={`inline-block p-3 rounded-2xl ${msg.senderId === user?.uid ? 'bg-primary text-white' : 'bg-secondary text-text-main'}`}>
+                    {msg.deleted ? (
+                      <span className="italic text-sm opacity-70">This message was deleted.</span>
+                    ) : (
+                      <>{msg.text}</>
+                    )}
+                  </div>
                 </div>
               </div>
             );

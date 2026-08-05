@@ -475,6 +475,13 @@
                                 <textarea id="broadcast-message" placeholder="Type announcement message..." class="w-full bg-white p-4 rounded-xl border border-gray-300 text-black font-semibold"></textarea>
                                 <button id="send-broadcast" class="w-full py-4 bg-primary text-secondary rounded-lg font-black hover:brightness-110">Send Broadcast</button>
                             </div>
+                            
+                            <div class="mt-8">
+                                <h5 class="font-bold text-gray-400 uppercase tracking-widest text-xs mb-4">Broadcast History</h5>
+                                <div id="broadcast-history" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                                    <div class="text-center text-gray-500 py-10"><i data-lucide="loader" class="animate-spin w-8 h-8 mx-auto mb-2"></i> Loading history...</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -1501,7 +1508,59 @@
                 updateCategoriesGrid();
                 updateUploadCategories();
             }, (error) => console.warn('Snapshot error (categories):', error));
+
+            // BROADCAST HISTORY LISTENER
+            const broadcastQuery = query(
+                collection(db, 'chats', 'community', 'messages'),
+                where('isBroadcast', '==', true),
+                orderBy('timestamp', 'desc')
+            );
+            onSnapshot(broadcastQuery, (snap) => {
+                const container = document.getElementById('broadcast-history');
+                if (!container) return;
+                
+                if (snap.empty) {
+                    container.innerHTML = '<div class="text-center text-gray-500 py-6">No broadcasts sent yet.</div>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const id = docSnap.id;
+                    const timeStr = data.timestamp ? data.timestamp.toDate().toLocaleString() : 'Just now';
+                    
+                    const el = document.createElement('div');
+                    el.className = 'p-4 bg-white/5 rounded-xl border border-white/10 flex justify-between items-start gap-4';
+                    el.innerHTML = `
+                        <div class="flex-1">
+                            <div class="text-xs text-gray-400 mb-1 flex items-center gap-2">
+                                <span class="font-bold text-primary">${data.senderName || 'Admin'}</span>
+                                <span>&bull;</span>
+                                <span>${timeStr}</span>
+                            </div>
+                            <p class="text-sm text-gray-200">${data.content || data.text}</p>
+                        </div>
+                        <button class="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors" onclick="deleteBroadcast('${id}')">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    `;
+                    container.appendChild(el);
+                });
+                lucide.createIcons();
+            }, (error) => console.warn('Snapshot error (broadcasts):', error));
         }
+
+        window.deleteBroadcast = async (id) => {
+            if (!confirm('Are you sure you want to delete this broadcast for everyone?')) return;
+            try {
+                await deleteDoc(doc(db, 'chats', 'community', 'messages', id));
+                toast('Broadcast deleted', 'success');
+            } catch (error) {
+                console.error(error);
+                toast('Failed to delete broadcast', 'error');
+            }
+        };
 
         // AUTO-REVOCATION LOGIC
         async function checkExpirations() {

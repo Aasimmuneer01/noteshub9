@@ -27,7 +27,7 @@ export default function UnreadNotification() {
             return onSnapshot(q, (msgSnapshot) => {
                 const lastRead = userData.lastReadChats?.[chatId] || new Timestamp(0, 0);
                 const newMessages = msgSnapshot.docs
-                    .map(doc => ({ id: doc.id, chatId, ...doc.data() }))
+                    .map(doc => ({ id: doc.id, chatId, ...doc.data() } as any))
                     .filter(msg => msg.timestamp && msg.timestamp > lastRead && msg.senderId !== user.uid && !msg.isBroadcast);
                 
                 if (newMessages.length > 0) {
