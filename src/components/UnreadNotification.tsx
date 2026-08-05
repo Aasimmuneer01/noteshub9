@@ -88,9 +88,9 @@ export default function UnreadNotification() {
           {unreadMessages.length > 0 && (
             <div className="mb-4 text-sm text-gray-600">
               <p className="font-bold mb-2">New messages:</p>
-              {unreadMessages.slice(0, 3).map(msg => (
+              {unreadMessages && unreadMessages.slice && unreadMessages.slice(0, 3).map(msg => (
                 <div key={msg.id} className="mb-2 p-2 bg-gray-100 rounded">
-                  <p><strong>{msg.senderName || (msg.senderId ? String(msg.senderId).slice(0, 8) : 'Unknown')}:</strong> {(msg.content || msg.text || '').slice(0, 30)}...</p>
+                  <p><strong>{msg.senderName || (msg.senderId ? String(msg.senderId).slice(0, 8) : 'Unknown')}:</strong> {String(msg.content || msg.text || '').slice(0, 30)}...</p>
                 </div>
               ))}
               {unreadMessages.length > 3 && <p>...and {unreadMessages.length - 3} more.</p>}
