@@ -1,8 +1,8 @@
 const CACHE_NAME = 'noteshub9-admin-cache-v1';
 const urlsToCache = [
-  '/admin.html',
-  '/favicon.png',
-  '/admin-manifest.json'
+  '/noteshub9/admin.html',
+  '/noteshub9/favicon.png',
+  '/noteshub9/admin-manifest.json'
 ];
 
 self.addEventListener('install', event => {
