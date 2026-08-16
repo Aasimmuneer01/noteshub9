@@ -210,8 +210,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (err: any) {
           console.error("Error in fetchUserDoc:", err);
-          // Proper error handling: only retry on transient network errors, not on permission/other errors
           const isTransientError = err.code === 'unavailable' || err.message?.includes('offline') || err.message?.includes('network');
+          
+          if (isTransientError) {
+             console.warn('Client is offline, performing optimistic cache update...');
+             try {
+               await setDoc(userDocRef, {
+                 uid: authUser.uid,
+                 email: authUser.email || '',
+                 displayName: authUser.displayName || authUser.email?.split('@')[0] || 'Student',
+                 lastLogin: serverTimestamp(),
+                 emailVerified: authUser.emailVerified,
+               }, { merge: true });
+               return; // Skip further retries, onSnapshot will pick up the cache
+             } catch (offlineErr) {
+               console.error("Failed offline fallback:", offlineErr);
+             }
+          }
+
           if (retries > 0 && isTransientError) {
              console.warn('Transient Firestore error, retrying...', err);
              await new Promise(r => setTimeout(r, 2000));

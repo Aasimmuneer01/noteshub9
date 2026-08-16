@@ -12,23 +12,36 @@ export default function UnreadNotification() {
   const [showNotification, setShowNotification] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState<any[]>([]);
 
+  const userDataRef = React.useRef(userData);
+  
   useEffect(() => {
-    if (!user || !userData) return;
+    userDataRef.current = userData;
+  }, [userData]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let messageUnsubs: (() => void)[] = [];
 
     // Listen to all chats the user is part of + community chat
     const chatsQuery = query(collection(db, 'chats'), where('participants', 'array-contains', user.uid));
     
     const unsubChats = onSnapshot(chatsQuery, (snapshot) => {
+        // Clean up previous message listeners
+        messageUnsubs.forEach(unsub => unsub());
+        messageUnsubs = [];
+
         // Collect chat IDs, ensuring 'community' is included
         const chatIds = new Set(snapshot.docs.map(doc => doc.id));
         chatIds.add('community');
         
-        const messageUnsubs = Array.from(chatIds).map(chatId => {
+        Array.from(chatIds).forEach(chatId => {
             const path = chatId === 'community' ? 'chats/community/messages' : `chats/${chatId}/messages`;
             const q = query(collection(db, path), orderBy('timestamp', 'desc'));
             
-            return onSnapshot(q, (msgSnapshot) => {
-                const lastRead = userData.lastReadChats?.[chatId] || new Timestamp(0, 0);
+            const unsub = onSnapshot(q, (msgSnapshot) => {
+                const currentUserData = userDataRef.current;
+                const lastRead = currentUserData?.lastReadChats?.[chatId] || new Timestamp(0, 0);
                 const newMessages = msgSnapshot.docs
                     .map(doc => ({ id: doc.id, chatId, ...doc.data() } as any))
                     .filter(msg => msg.timestamp && msg.timestamp > lastRead && msg.senderId !== user.uid);
@@ -37,10 +50,6 @@ export default function UnreadNotification() {
                   const filtered = prev.filter(m => m.chatId !== chatId);
                   const updated = [...filtered, ...newMessages];
                   
-                  // Only show popup if there are new unread messages and we are NOT currently looking at this chat
-                  // But since we can't easily check current active chat here, we just show notification if updated has items
-                  // We'll handle suppressing the popup if they are in the chat by checking window.location.pathname? No, the prompt says:
-                  // "If the user is already viewing the Community chat, do not show the popup, but mark the message as read automatically."
                   if (newMessages.length > 0) {
                      const isCurrentlyInChat = window.location.pathname === '/chat' && localStorage.getItem('activeChat') === chatId;
                      if (isCurrentlyInChat) {
@@ -54,13 +63,20 @@ export default function UnreadNotification() {
                   
                   return updated;
                 });
+            }, (error) => {
+               console.error("Error in message snapshot:", error);
             });
+            messageUnsubs.push(unsub);
         });
-        return () => messageUnsubs.forEach(unsub => unsub());
+    }, (error) => {
+        console.error("Error in chats snapshot:", error);
     });
     
-    return unsubChats;
-  }, [user, userData]);
+    return () => {
+        unsubChats();
+        messageUnsubs.forEach(unsub => unsub());
+    };
+  }, [user]);
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('unreadMessagesUpdate', { detail: unreadMessages.length }));
