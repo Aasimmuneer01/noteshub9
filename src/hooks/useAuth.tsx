@@ -146,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
       console.log("onAuthStateChanged triggered. User:", authUser ? authUser.uid : 'null');
+      if (authUser) console.log("Google authentication success. UID:", authUser.uid);
       if (unsubscribeDoc) {
         unsubscribeDoc();
         unsubscribeDoc = undefined;
