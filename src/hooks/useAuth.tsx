@@ -10,7 +10,9 @@ import {
   updateProfile,
   updatePassword,
   reauthenticateWithCredential,
-  EmailAuthProvider
+  EmailAuthProvider,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
@@ -43,6 +45,7 @@ interface AuthContextType {
   verificationBlocked: boolean;
   login: (email: string, pass: string) => Promise<void>;
   signup: (email: string, pass: string, name: string) => Promise<void>;
+  continueWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   resendVerification: () => Promise<void>;
@@ -62,6 +65,7 @@ const AuthContext = createContext<AuthContextType>({
   verificationBlocked: false,
   login: async () => {},
   signup: async () => {},
+  continueWithGoogle: async () => {},
   logout: async () => {},
   forgotPassword: async () => {},
   resendVerification: async () => {},
@@ -305,6 +309,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const continueWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+    // The onAuthStateChanged listener will handle creating the user document
+    // if it doesn't exist, similar to regular signup/login.
+  };
+
   const logout = async () => {
     await signOut(auth);
     setBannedMessage(null);
@@ -402,6 +413,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verificationBlocked,
       login,
       signup,
+      continueWithGoogle,
       logout,
       forgotPassword,
       resendVerification,
