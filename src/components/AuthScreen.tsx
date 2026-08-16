@@ -124,13 +124,13 @@ export default function AuthScreen() {
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
 
           {/* Logo / Icon */}
-          <div className="w-12 h-12 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-            <div className="w-5 h-5 rounded-[4px] border-2 border-white rotate-45"></div>
+          <div className="w-12 h-12 bg-white/5 rounded-2xl border border-white/10 flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(255,255,255,0.05)] overflow-hidden">
+            <img src="/favicon.png" alt="NotesHub9 Logo" className="w-8 h-8 object-contain" />
           </div>
 
           <div className="text-center mb-8">
             <h1 className="text-2xl font-medium tracking-wide text-white mb-1">
-              {mode === 'login' ? 'Welcome back' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
+              {mode === 'login' ? 'Welcome' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
             </h1>
             <p className="text-[#8B98B2] text-[13px]">
               {mode === 'login' ? 'Please enter your details to sign in.' : mode === 'signup' ? 'Please enter your details to sign up.' : 'Enter your email to receive a reset link.'}
