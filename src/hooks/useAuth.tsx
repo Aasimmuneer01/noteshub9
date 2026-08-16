@@ -180,6 +180,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               console.warn('Could not check banned fingerprints:', err);
             }
 
+            const isGoogle = authUser.providerData.some(p => p.providerId === 'google.com');
+            const authProvider = isGoogle ? 'google' : 'password';
+
             const newUserData: UserType = {
               uid: authUser.uid,
               email: authUser.email || '',
@@ -196,16 +199,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               accountStatus: initialStatus,
               warningCount: 0,
               warnings: [],
+              authProvider,
             };
 
             await setDoc(userDocRef, newUserData);
             console.log('User document created successfully');
           } else {
             console.log('Updating last login for:', authUser.uid);
+            const isGoogle = authUser.providerData.some(p => p.providerId === 'google.com');
             await updateDoc(userDocRef, {
               lastLogin: serverTimestamp(),
               deviceFingerprint: fp,
               emailVerified: authUser.emailVerified,
+              authProvider: isGoogle ? 'google' : 'password',
             });
           }
         } catch (err: any) {

@@ -694,6 +694,7 @@
                         <div class="flex gap-2 mt-3">
                             <span id="md-user-badge-role" class="px-3 py-1 bg-white/5 text-[10px] font-bold uppercase rounded-lg border border-white/5">Member</span>
                             <span id="md-user-badge-status" class="px-3 py-1 bg-green-500/10 text-green-500 text-[10px] font-bold uppercase rounded-lg border border-green-500/20">Active</span>
+                            <span id="md-user-badge-provider" class="px-3 py-1 bg-blue-500/10 text-blue-500 text-[10px] font-bold uppercase rounded-lg border border-blue-500/20">Provider</span>
                         </div>
                     </div>
                 </div>
@@ -1917,6 +1918,7 @@
             document.getElementById('md-user-email').textContent = u.email;
             document.getElementById('md-user-badge-role').textContent = u.role?.toUpperCase() || 'MEMBER';
             document.getElementById('md-user-badge-status').textContent = u.isBanned ? 'BANNED' : 'ACTIVE';
+            document.getElementById('md-user-badge-provider').textContent = (u.authProvider || 'password').toUpperCase();
             document.getElementById('md-user-joined').textContent = u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString() : 'N/A';
             document.getElementById('md-user-last-login').textContent = u.lastLogin?.toDate ? u.lastLogin.toDate().toLocaleString() : 'N/A';
             

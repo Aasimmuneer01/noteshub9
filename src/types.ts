@@ -43,6 +43,7 @@ export interface User {
   warningCount: number;
   warningAcknowledged?: boolean;
   aiFeatureSeen?: boolean;
+  authProvider?: string;
 }
 
 export interface Bookmark {
