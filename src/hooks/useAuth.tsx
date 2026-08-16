@@ -145,12 +145,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let unsubscribeDoc: (() => void) | undefined;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (authUser) => {
+      console.log("onAuthStateChanged triggered. User:", authUser ? authUser.uid : 'null');
       if (unsubscribeDoc) {
         unsubscribeDoc();
         unsubscribeDoc = undefined;
       }
 
       if (!authUser) {
+        console.log("No authenticated user.");
         setUser(null);
         setUserData(null);
         setVerificationBlocked(false);
@@ -159,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(authUser);
+      console.log("User authenticated, fetching document for:", authUser.uid);
       const fp = getDeviceFingerprint();
       const userDocRef = doc(db, 'users', authUser.uid);
 

@@ -66,6 +66,8 @@ export default function AuthScreen() {
   };
 
   const handleGoogleSignIn = async () => {
+    setError(null);
+    setLoading(true);
     try {
       await continueWithGoogle();
     } catch (err: any) {
@@ -99,6 +101,8 @@ export default function AuthScreen() {
           setError(`Google Sign-In error (${err.code}): ${err.message}`);
           break;
       }
+    } finally {
+      setLoading(false);
     }
   };
 
