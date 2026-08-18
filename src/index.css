@@ -1,28 +1,78 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #38bdf8;
-  --color-secondary: #091818;
-  --color-accent: #38bdf8;
-  --color-background-main: var(--bg-main);
-  --color-surface: var(--bg-surface);
-  --color-text-main: var(--text-main);
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Modern Dark Theme Palette */
+  --color-background-main: #0B1120;
+  --color-surface: #1A2235;
+  --color-surface-light: #252f48;
+  --color-surface-border: #2e3b57;
+  --color-primary: #0ea5e9;
+  --color-primary-hover: #0284c7;
+  --color-secondary: #0f172a;
+  
+  --color-text-main: #f8fafc;
+  --color-text-muted: #94a3b8;
+  
+  --color-accent: #3b82f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
 }
 
 @layer base {
-  :root {
-    --bg-main: #020617;
-    --bg-surface: #0f172a;
-    --text-main: #f8fafc;
-  }
-
-  .dark {
-    --bg-main: #020617;
-    --bg-surface: #0f172a;
-    --text-main: #f8fafc;
-  }
-
   body {
-    overflow-x: hidden;
+    @apply bg-background-main text-text-main font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-background-main;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-border rounded-full hover:bg-gray-500 transition-colors;
+  }
+  
+  /* Input & Button base styles */
+  .input-field {
+    @apply w-full bg-surface border border-surface-border rounded-xl px-4 py-3 text-text-main placeholder-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all;
+  }
+  
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-hover text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-secondary {
+    @apply bg-surface hover:bg-surface-light text-text-main font-semibold py-3 px-6 rounded-xl border border-surface-border transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  }
+  
+  /* Custom Zoom Slider for PDF Viewer */
+  .custom-zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #fcd34d, #d97706);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    border: 2px solid #fff;
+  }
+  
+  .custom-zoom-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #fcd34d, #d97706);
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    border: 2px solid #fff;
   }
 }

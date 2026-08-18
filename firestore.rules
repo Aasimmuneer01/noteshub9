@@ -163,5 +163,9 @@ service cloud.firestore {
         allow read, write: if isAuthenticated() && !isBanned(request.auth.uid);
       }
     }
+
+    match /ai_assistants/{docId} {
+      allow read, write: if isAdmin();
+    }
   }
 }
