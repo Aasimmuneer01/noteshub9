@@ -35,12 +35,13 @@ import BanPolicy from './pages/legal/BanPolicy';
 import PremiumAgreement from './pages/legal/PremiumAgreement';
 import Footer from './components/Footer';
 import TermsAcceptanceDialog from './components/TermsAcceptanceDialog';
+import PremiumNotificationPopup from './components/PremiumNotificationPopup';
 import WarningModal from './components/WarningModal';
 import { NewFeaturePopup } from './components/common/NewFeaturePopup';
 import ShutdownPage from './components/ShutdownPage';
 
 function MainLayout() {
-  const { user, loading, verificationBlocked, userData, acceptTerms, acknowledgeWarning, logout } = useAuth();
+  const { user, loading, verificationBlocked, userData, acceptTerms, acknowledgePremiumNotification, acknowledgeWarning, logout } = useAuth();
   const location = useLocation();
   const [showPopup, setShowPopup] = useState(false);
   
@@ -73,6 +74,10 @@ function MainLayout() {
 
   if (user && !termsAccepted && location.pathname !== '/terms') {
     return <TermsAcceptanceDialog onAccept={acceptTerms} onDecline={logout} />;
+  }
+
+  if (user && termsAccepted && userData?.isPremium && userData?.premiumType === 'global_free' && !userData?.premiumNotificationShown && location.pathname !== '/terms') {
+    return <PremiumNotificationPopup onAcknowledge={acknowledgePremiumNotification} />;
   }
 
   if (userData?.accountStatus === 'warning' && userData.warningAcknowledged !== true && userData.warnings && userData.warnings.length > 0 && location.pathname !== '/terms') {

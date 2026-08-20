@@ -31,8 +31,12 @@ export interface User {
   isEmailVerified?: boolean;
   // Premium details
   premiumPlan?: string;
+  premiumType?: string;
   premiumStart?: any;
+  premiumStartDate?: any;
   premiumExpiry?: any;
+  premiumExpiryDate?: any;
+  premiumNotificationShown?: boolean;
   premiumGrantedBy?: string;
   premiumGrantedAt?: any;
   premiumStatus?: 'active' | 'expired' | 'none';

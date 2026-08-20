@@ -16,6 +16,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
+import { Timestamp } from 'firebase/firestore';
 import { User as UserType } from '../types';
 
 export function getDeviceFingerprint(): string {
@@ -53,6 +54,7 @@ interface AuthContextType {
   clearBannedMessage: () => void;
   changePassword: (newPass: string) => Promise<void>;
   acceptTerms: () => Promise<void>;
+  acknowledgePremiumNotification: () => Promise<void>;
   acknowledgeWarning: () => Promise<void>;
 }
 
@@ -73,6 +75,7 @@ const AuthContext = createContext<AuthContextType>({
   clearBannedMessage: () => {},
   changePassword: async () => {},
   acceptTerms: async () => {},
+  acknowledgePremiumNotification: async () => {},
   acknowledgeWarning: async () => {},
 });
 
@@ -104,13 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (userData.premiumPlan === 'Lifetime') {
+      if ((userData.premiumPlan === 'Lifetime' || userData.premiumType === 'Lifetime')) {
         setIsPremium(true);
         return;
       }
 
-      if (userData.premiumExpiry) {
-        const expiry = userData.premiumExpiry.toDate();
+      if (userData.premiumExpiry || userData.premiumExpiryDate) {
+        const expiry = (userData.premiumExpiry || userData.premiumExpiryDate).toDate();
         const active = new Date() < expiry;
         setIsPremium(active);
         return;
@@ -123,8 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Set up a timer if it's premium and has an expiry
     let timer: NodeJS.Timeout;
-    if (userData?.isPremium && userData.premiumExpiry && userData.premiumPlan !== 'Lifetime') {
-      const expiry = userData.premiumExpiry.toDate().getTime();
+    if (userData?.isPremium && (userData.premiumExpiry || userData.premiumExpiryDate) && (userData.premiumPlan !== 'Lifetime' && userData.premiumType !== 'Lifetime')) {
+      const expiry = (userData.premiumExpiry || userData.premiumExpiryDate).toDate().getTime();
       const now = new Date().getTime();
       const diff = expiry - now;
 
@@ -169,6 +172,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const fetchUserDoc = async (retries = 3): Promise<void> => {
         try {
           console.log('Fetching user doc for:', authUser.uid);
+          
+          // Fetch global settings
+          const settingsSnap = await getDoc(doc(db, 'website_control', 'settings'));
+          const settings = settingsSnap.exists() ? settingsSnap.data() : {};
+          const globalFreePremium = !!settings.globalFreePremium;
+          const now = new Date();
+          const expiry = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+
           const snap = await getDoc(userDocRef);
           if (!snap.exists()) {
             console.log('Creating new user document for:', authUser.uid);
@@ -183,7 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const isGoogle = authUser.providerData.some(p => p.providerId === 'google.com');
             const authProvider = isGoogle ? 'google' : 'password';
 
-            const newUserData: UserType = {
+            const newUserData: any = {
               uid: authUser.uid,
               email: authUser.email || '',
               displayName: authUser.displayName || authUser.email?.split('@')[0] || 'Student',
@@ -192,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               role: authUser.email === 'admin@example.com' || authUser.email === 'aasimmuneer349@gmail.com' || authUser.email === 'admin@eduplatform.com' || authUser.email === 'mahnoor4999@gmail.com' ? 'admin' : 'user',
               isBanned: false,
               banReason: '',
-              isPremium: false,
+              isPremium: globalFreePremium,
               emailVerified: authUser.emailVerified,
               verificationRequired: false,
               deviceFingerprint: fp,
@@ -201,6 +212,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               warnings: [],
               authProvider,
             };
+            if (globalFreePremium) {
+                newUserData.premiumType = 'global_free';
+                newUserData.premiumStartDate = Timestamp.fromDate(now);
+                newUserData.premiumExpiryDate = Timestamp.fromDate(expiry);
+                newUserData.premiumNotificationShown = false;
+            }
 
             await setDoc(userDocRef, newUserData);
             console.log('User document created successfully');
@@ -294,8 +311,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           // Automatic Premium Expiry Check
-          if (data.isPremium && data.premiumExpiry && data.premiumPlan !== 'Lifetime') {
-            const expiry = data.premiumExpiry.toDate();
+          if (data.isPremium && (data.premiumExpiry || data.premiumExpiryDate) && (data.premiumPlan !== 'Lifetime' && data.premiumType !== 'Lifetime')) {
+            const expiry = (data.premiumExpiry || data.premiumExpiryDate).toDate();
             if (new Date() >= expiry) {
               console.log("Premium expired for user:", authUser.uid);
               // Local update happens automatically via checkPremium derived state
@@ -416,6 +433,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updateDoc(doc(db, 'users', auth.currentUser.uid), {
       termsAccepted: true,
       termsAcceptedAt: serverTimestamp(),
+    });
+  };
+
+  const acknowledgePremiumNotification = async () => {
+    if (!auth.currentUser) throw new Error("No user logged in");
+    await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+      premiumNotificationShown: true,
     });
   };
 

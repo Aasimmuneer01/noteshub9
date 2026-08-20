@@ -20,7 +20,7 @@ export function AdminDashboard() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'users', label: 'Users' },
-    { id: 'ai', label: 'AI Management' },
+    { id: 'ai', label: 'AI Assistants' },
     { id: 'website', label: 'Website Control' },
   ];
 
