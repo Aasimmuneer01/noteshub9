@@ -471,6 +471,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearBannedMessage,
       changePassword,
       acceptTerms,
+      acknowledgePremiumNotification,
       acknowledgeWarning,
     }}>
       {children}

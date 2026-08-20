@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase/config';
@@ -43,6 +43,7 @@ import ShutdownPage from './components/ShutdownPage';
 function MainLayout() {
   const { user, loading, verificationBlocked, userData, acceptTerms, acknowledgePremiumNotification, acknowledgeWarning, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showPopup, setShowPopup] = useState(false);
   
   // Terms check
@@ -77,7 +78,10 @@ function MainLayout() {
   }
 
   if (user && termsAccepted && userData?.isPremium && userData?.premiumType === 'global_free' && !userData?.premiumNotificationShown && location.pathname !== '/terms') {
-    return <PremiumNotificationPopup onAcknowledge={acknowledgePremiumNotification} />;
+    return <PremiumNotificationPopup onAcknowledge={async () => {
+      await acknowledgePremiumNotification();
+      navigate('/');
+    }} />;
   }
 
   if (userData?.accountStatus === 'warning' && userData.warningAcknowledged !== true && userData.warnings && userData.warnings.length > 0 && location.pathname !== '/terms') {
