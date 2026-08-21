@@ -3,9 +3,18 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Bot, Send, User, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Message } from '../types';
-
-import { doc, onSnapshot, addDoc, collection, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot, addDoc, collection, getDoc, getDocs, updateDoc, Timestamp, query, where } from 'firebase/firestore';
 import { db } from '../firebase/config';
+
+interface AIAssistantConfig {
+    id: string;
+    name: string;
+    apiKey?: string;
+    provider: string;
+    model: string;
+    enabled: boolean;
+    description?: string;
+}
 
 export default function AIAssistant() {
   const { userData } = useAuth();
@@ -17,6 +26,9 @@ export default function AIAssistant() {
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [aiEnabled, setAiEnabled] = useState(true);
+  const [availableAssistants, setAvailableAssistants] = useState<AIAssistantConfig[]>([]);
+  const [loadingAssistants, setLoadingAssistants] = useState(true);
+  const [selectedAssistantId, setSelectedAssistantId] = useState<string>('');
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'ai_settings', 'status'), (docSnap) => {
@@ -24,7 +36,34 @@ export default function AIAssistant() {
             setAiEnabled(docSnap.data().enabled);
         }
     });
-    return () => unsub();
+
+    const fetchAssistants = () => {
+        setLoadingAssistants(true);
+        const q = query(collection(db, 'ai_assistants'), where('enabled', '==', true));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const assistants = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAvailableAssistants(assistants);
+            setSelectedAssistantId(prev => {
+                if (assistants.length > 0) {
+                    if (!prev || !assistants.find(a => a.id === prev)) {
+                        return assistants[0].id;
+                    }
+                }
+                return prev;
+            });
+            setLoadingAssistants(false);
+        }, (error) => {
+            console.error("Error fetching assistants:", error);
+            setLoadingAssistants(false);
+        });
+        return unsubscribe;
+    };
+    const unsubscribeAssistants = fetchAssistants();
+
+    return () => {
+        unsub();
+        if (unsubscribeAssistants) unsubscribeAssistants();
+    };
   }, []);
 
   useEffect(() => {
@@ -48,7 +87,7 @@ export default function AIAssistant() {
       role: 'user',
       content: input,
       createdAt: new Date(),
-      provider: 'Groq',
+      provider: 'User',
     };
     
     const newMessages = [...messages, userMessage];
@@ -60,19 +99,26 @@ export default function AIAssistant() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })) 
+        body: JSON.stringify({
+            messages: newMessages,
+            provider: availableAssistants.find(a => a.id === selectedAssistantId)?.provider || 'Google',
+            model: availableAssistants.find(a => a.id === selectedAssistantId)?.model || 'gemini-3.6-flash',
+            systemInstruction: availableAssistants.find(a => a.id === selectedAssistantId)?.description || 'You are a helpful AI assistant for NotesHub9.'
         })
       });
       
       const data = await response.json();
+      
+      if (!response.ok) {
+          throw new Error(data.error || 'Failed to get response');
+      }
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: data.content || 'No response',
         createdAt: new Date(),
-        provider: 'Gemini',
+        provider: data.provider || 'AI',
       };
       const finalMessages = [...newMessages, assistantMessage];
       setMessages(finalMessages);
@@ -100,19 +146,23 @@ export default function AIAssistant() {
               navigate('/ai-assistant?chatId=' + newChat.id, { replace: true });
           }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Fetch error:", err);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "Sorry, I encountered an error. Please try again.",
+        content: `Sorry, I encountered an error: ${err.message || 'Please try again.'}`,
         createdAt: new Date(),
-        provider: 'Groq',
+        provider: 'System',
       }]);
     } finally {
       setIsTyping(false);
     }
   };
+
+  if (loadingAssistants) {
+    return <div className="flex justify-center mt-20"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>;
+  }
 
   if (!aiEnabled) {
     return (
@@ -128,11 +178,38 @@ export default function AIAssistant() {
     );
   }
 
+  if (availableAssistants.length === 0) {
+    return (
+        <div className="max-w-2xl mx-auto p-8 text-center bg-white rounded-xl shadow border border-gray-200 mt-20">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900">No AI Assistants Available</h2>
+            <p className="text-gray-600 mb-4">
+                There are no AI assistants currently enabled or configured. Please contact the administrator.
+            </p>
+            <button onClick={() => navigate('/')} className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700">
+                Return Home
+            </button>
+        </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 mt-16 max-w-2xl mx-auto shadow-xl rounded-2xl overflow-hidden border border-gray-200">
       {/* Header */}
       <div className="bg-blue-600 p-4 text-white font-semibold flex justify-between items-center">
-        <span>NotesHub9 AI Assistant</span>
+        <div className="flex items-center gap-3">
+            <span>NotesHub9 AI</span>
+            {availableAssistants.length > 0 && (
+                <select 
+                    value={selectedAssistantId}
+                    onChange={(e) => setSelectedAssistantId(e.target.value)}
+                    className="bg-blue-700 text-white border border-blue-500 rounded px-2 py-1 text-sm outline-none cursor-pointer focus:ring-1 focus:ring-white"
+                >
+                    {availableAssistants.map(a => (
+                        <option key={a.id} value={a.id}>{a.name}</option>
+                    ))}
+                </select>
+            )}
+        </div>
         <div className='flex gap-2 items-center'>
             <button onClick={() => navigate('/ai-history')} className='text-sm bg-white/20 px-2 py-1 rounded'>History</button>
             <button onClick={() => navigate('/')}><X size={20}/></button>

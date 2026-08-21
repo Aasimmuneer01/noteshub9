@@ -2441,7 +2441,7 @@
         window.saveAssistant = async (index) => {
             const a = assistantsData[index];
             const name = document.querySelector(`.assistant-name[data-index="${index}"]`).value;
-            const apiKey = document.querySelector(`.assistant-key[data-index="${index}"]`).value;
+            const apiKey = "";
             const provider = document.querySelector(`.assistant-provider[data-index="${index}"]`).value;
             const model = document.querySelector(`.assistant-model[data-index="${index}"]`).value;
             const enabled = document.querySelector(`.assistant-enabled[data-index="${index}"]`).value === 'true';

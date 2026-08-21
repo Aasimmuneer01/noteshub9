@@ -63,7 +63,6 @@ export default function Folders() {
 
   const deleteFolder = async (id: string) => {
     if (!user) return;
-    if (!window.confirm("Are you sure you want to delete this folder? Resources inside won't be deleted.")) return;
     try {
       await deleteDoc(doc(db, 'users', user.uid, 'folders', id));
       setFolders(prev => prev.filter(f => f.id !== id));

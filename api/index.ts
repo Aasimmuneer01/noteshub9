@@ -2,9 +2,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';
 import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { google } from 'googleapis';
 import { updateAnalytics, logEmail, logPendingReview } from './_analytics.js';
-import { getFirestore } from 'firebase-admin/firestore';
 
 const app = express();
 
@@ -165,7 +166,7 @@ async function handleReplyEmails(req: any, res: any) {
         try {
             console.log('Sending prompt to Gemini for message', msg.id, '...');
             const response = await ai.models.generateContent({
-              model: 'gemini-2.0-flash',
+              model: 'gemini-3.6-flash',
               contents: `Email from: ${fromHeader}\nSubject: ${subjectHeader}\n\n${plainTextBody}`,
               config: {
                 systemInstruction: `You are the official AI customer support assistant for NotesHub9.
@@ -312,17 +313,22 @@ Confidence: [Confidence Score 0-10]`
   }
 }
 
+
+
+
+
 app.post('/api/chat', async (req, res) => {
     try {
         const { messages, assistantId } = req.body;
         
         let apiKey = process.env.GEMINI_API_KEY;
-        let model = 'gemini-2.0-flash';
+        let model = 'gemini-3.6-flash';
         let systemInstruction = "You are a helpful AI assistant for NotesHub9.";
         let provider = 'Google';
 
         if (assistantId) {
-            const db = getFirestore();
+            const config = JSON.parse(require('fs').readFileSync('firebase-applet-config.json', 'utf8'));
+        const db = getFirestore(config.firestoreDatabaseId);
             const assistantDoc = await db.collection('ai_assistants').doc(assistantId).get();
             if (assistantDoc.exists) {
                 const config = assistantDoc.data();
@@ -355,9 +361,35 @@ app.post('/api/chat', async (req, res) => {
             });
             const content = response.text || 'No response';
             return res.json({ content, provider });
+        } else if (provider.toLowerCase() === 'openai' || provider.toLowerCase() === 'chatgpt') {
+            const openai = new OpenAI({ apiKey });
+            const response = await openai.chat.completions.create({
+                model: model,
+                messages: [
+                    { role: 'system', content: systemInstruction },
+                    ...messages.map((m: any) => ({ role: m.role, content: m.content }))
+                ]
+            });
+            const content = response.choices[0]?.message?.content || 'No response';
+            return res.json({ content, provider });
+        } else if (provider.toLowerCase() === 'anthropic' || provider.toLowerCase() === 'claude') {
+            const anthropic = new Anthropic({ apiKey });
+            
+            // Format messages for Anthropic (only user/assistant roles allowed)
+            const anthropicMessages = messages.map((m: any) => ({
+                role: m.role === 'user' ? 'user' : 'assistant',
+                content: m.content
+            }));
+            
+            const response = await anthropic.messages.create({
+                model: model,
+                system: systemInstruction,
+                max_tokens: 1024,
+                messages: anthropicMessages
+            });
+            const content = response.content[0]?.type === 'text' ? response.content[0].text : 'No response';
+            return res.json({ content, provider });
         } else {
-            // Placeholder for other providers (OpenAI, Anthropic, etc.)
-            // The architecture is now ready to support them server-side without exposing keys.
             return res.status(501).json({ error: `Provider ${provider} is not yet implemented in the backend.` });
         }
         

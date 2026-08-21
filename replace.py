@@ -1,20 +1,14 @@
-import React, { useEffect, useState } from 'react';
-import { doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase/config';
-import { Plus, Trash2, Save, Loader2 } from 'lucide-react';
+import re
 
-interface AIAssistantConfig {
-    id: string;
-    name: string;
-    apiKey: string;
-    provider: string;
-    model: string;
-    enabled: boolean;
-    description: string;
-    isNew?: boolean;
-}
+with open('src/components/Admin/AIManager.tsx', 'r') as f:
+    content = f.read()
 
-const AssistantCard = ({ 
+# I want to rewrite from "const AssistantCard = ({" to "};" before "export function AIManager()"
+start = content.find("const AssistantCard = ({")
+end = content.find("export function AIManager()")
+
+if start != -1 and end != -1:
+    new_component = """const AssistantCard = ({ 
     assistant, 
     onChange,
     onSave, 
@@ -63,8 +57,8 @@ const AssistantCard = ({
                                     // The instruction says "Update the SAME Firestore document"
                                     // I'll assume we can call an update directly or just let handleSave do it.
                                     // It's cleaner to have a toggle function, but we can do it inline.
-                                    
-                                    
+                                    const { doc, updateDoc } = require('firebase/firestore');
+                                    const { db } = require('../../firebase/config');
                                     await updateDoc(doc(db, 'ai_assistants', assistant.id), { enabled: updated.enabled });
                                 } catch (e) {
                                     console.error("Failed to toggle status", e);
@@ -99,8 +93,8 @@ const AssistantCard = ({
                             onChange(updated);
                             if (!assistant.isNew) {
                                 try {
-                                    
-                                    
+                                    const { doc, updateDoc } = require('firebase/firestore');
+                                    const { db } = require('../../firebase/config');
                                     await updateDoc(doc(db, 'ai_assistants', assistant.id), { enabled: updated.enabled });
                                 } catch (e) {
                                     console.error("Failed to toggle status", e);
@@ -192,7 +186,7 @@ const AssistantCard = ({
                         value={editData.model}
                         onChange={e => setEditData({...editData, model: e.target.value})}
                         className="w-full border border-gray-400 rounded-lg p-2 bg-white text-black placeholder-gray-500 focus:ring-2 focus:ring-blue-500"
-                        placeholder="e.g. gemini-3.6-flash"
+                        placeholder="e.g. gemini-2.0-flash"
                     />
                 </div>
                 
@@ -234,159 +228,17 @@ const AssistantCard = ({
     );
 };
 
-export function AIManager() {
-  const [globalEnabled, setGlobalEnabled] = useState(true);
-  const [assistants, setAssistants] = useState<AIAssistantConfig[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newAssistants, setNewAssistants] = useState<AIAssistantConfig[]>([]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const docSnap = await getDoc(doc(db, 'ai_settings', 'status'));
-      if (docSnap.exists()) {
-        setGlobalEnabled(docSnap.data().enabled);
-      }
-
-      const assistantsSnap = await getDocs(collection(db, 'ai_assistants'));
-      const fetchedAssistants = assistantsSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-      } as AIAssistantConfig));
-      setAssistants(fetchedAssistants);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
-
-  const toggleGlobal = async () => {
-    const newEnabled = !globalEnabled;
-    await setDoc(doc(db, 'ai_settings', 'status'), { enabled: newEnabled }, { merge: true });
-    setGlobalEnabled(newEnabled);
-  };
-
-  const handleAddClick = () => {
-      setNewAssistants(prev => [{
-          id: `temp-${Date.now()}`,
-          name: '',
-          apiKey: '',
-          provider: 'Google',
-          model: 'gemini-3.6-flash',
-          enabled: true,
-          description: '',
-          isNew: true
-      }, ...prev]);
-  };
-
-  const handleSave = async (data: AIAssistantConfig) => {
-      try {
-          const { id, isNew, ...saveData } = data;
-          if (isNew) {
-              await addDoc(collection(db, 'ai_assistants'), {
-                  ...saveData,
-                  createdAt: serverTimestamp()
-              });
-          } else {
-              await updateDoc(doc(db, 'ai_assistants', id), saveData as any);
-          }
-          
-          // Re-fetch all assistants to ensure UI is perfectly synced with Firestore
-          const assistantsSnap = await getDocs(collection(db, 'ai_assistants'));
-          const fetchedAssistants = assistantsSnap.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-          } as AIAssistantConfig));
-          setAssistants(fetchedAssistants);
-          setNewAssistants(prev => prev.filter(a => a.id !== data.id));
-      } catch (err: any) {
-          console.error("Error saving assistant:", err);
-          alert("Failed to save assistant: " + (err.message || "Unknown error"));
-          throw err;
-      }
-  };
-
-  const handleUpdate = (data: AIAssistantConfig) => {
-      if (data.isNew) {
-          setNewAssistants(prev => prev.map(a => a.id === data.id ? data : a));
-      } else {
-          setAssistants(prev => prev.map(a => a.id === data.id ? data : a));
-      }
-  };
-
-  const handleDelete = async (id: string) => {
-      try {
-          await deleteDoc(doc(db, 'ai_assistants', id));
-          setAssistants(prev => prev.filter(a => a.id !== id));
-      } catch (err) {
-          console.error("Error deleting assistant:", err);
-          alert("Failed to delete assistant. Error: " + (err.message || "Unknown error"));
-      }
-  };
-
-  const handleCancelNew = (id: string) => {
-      setNewAssistants(prev => prev.filter(a => a.id !== id));
-  };
-
-  if (loading) return <div className="p-8 flex justify-center"><Loader2 className="animate-spin text-blue-500 w-8 h-8" /></div>;
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow border">
-        <h2 className="text-xl font-bold mb-4">Global AI Assistant Status</h2>
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={toggleGlobal}
-            className={`px-4 py-2 rounded-lg font-bold ${globalEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}
-          >
-            {globalEnabled ? 'Enabled' : 'Disabled'}
-          </button>
-          <p className="text-gray-600">
-            The global AI feature is currently {globalEnabled ? 'enabled' : 'disabled'}.
-          </p>
-        </div>
-      </div>
-
-      <div className="bg-white p-6 rounded-lg shadow border">
-        <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-            <h2 className="text-xl font-bold">AI Assistants</h2>
-            <button 
-                onClick={handleAddClick}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 shadow-sm"
-            >
-                <Plus size={18} /> Add AI Assistant
-            </button>
-        </div>
-
-        <div className="max-w-xl">
-            {newAssistants.map(assistant => (
-                <AssistantCard 
-                    key={assistant.id}
-                    assistant={assistant}
-                    onChange={handleUpdate}
-                    onSave={handleSave}
-                    onDelete={handleDelete}
-                    onCancelNew={() => handleCancelNew(assistant.id)}
-                />
-            ))}
-
-            {assistants.length === 0 && newAssistants.length === 0 ? (
-                <div className="py-12 text-center text-gray-500 border-2 border-dashed border-gray-200 rounded-xl">
-                    <p className="mb-2">No AI assistants configured yet.</p>
-                    <p className="text-sm">Click "+ Add AI Assistant" to set up your first model.</p>
-                </div>
-            ) : (
-                assistants.map(assistant => (
-                    <AssistantCard 
-                        key={assistant.id}
-                        assistant={assistant}
-                        onChange={handleUpdate}
-                        onSave={handleSave}
-                        onDelete={handleDelete}
-                        onCancelNew={() => {}}
-                    />
-                ))
-            )}
-        </div>
-      </div>
-    </div>
-  );
-}
+"""
+    new_content = content[:start] + new_component + content[end:]
+    
+    # Also update handleDelete to show error
+    new_content = new_content.replace(
+        'console.error("Error deleting assistant:", err);',
+        'console.error("Error deleting assistant:", err);\n          alert("Failed to delete assistant. Error: " + (err.message || "Unknown error"));'
+    )
+    
+    with open('src/components/Admin/AIManager.tsx', 'w') as f:
+        f.write(new_content)
+    print("Updated successfully")
+else:
+    print("Could not find boundaries")

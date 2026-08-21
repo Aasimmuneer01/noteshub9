@@ -31,14 +31,12 @@ export default function AIChatHistory() {
   const deleteChat = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     console.log('Deleting chat:', id, 'User:', userData?.uid);
-    if (window.confirm('Delete this conversation?')) {
-      if (!userData?.uid) {
-        console.error('Cannot delete chat: user ID is missing');
-        return;
-      }
-      await deleteDoc(doc(db, 'users', userData.uid, 'chats', id));
-      setChats(prev => prev.filter(c => c.id !== id));
+    if (!userData?.uid) {
+      console.error('Cannot delete chat: user ID is missing');
+      return;
     }
+    await deleteDoc(doc(db, 'users', userData.uid, 'chats', id));
+    setChats(prev => prev.filter(c => c.id !== id));
   };
 
   const renameChat = async (id: string, currentTitle: string, e: React.MouseEvent) => {

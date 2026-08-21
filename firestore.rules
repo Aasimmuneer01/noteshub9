@@ -165,7 +165,7 @@ service cloud.firestore {
     }
 
     match /ai_assistants/{docId} {
-      allow read: if isAdmin();
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
   }
