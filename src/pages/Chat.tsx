@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { db } from '../firebase/config';
-import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp, getDocs, doc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, addDoc, serverTimestamp, getDocs, doc, setDoc, updateDoc, Timestamp, deleteDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquareOff, Ban } from 'lucide-react';
 
@@ -14,6 +14,9 @@ export default function Chat() {
   const [users, setUsers] = useState<any[]>([]);
   const [chatEnabled, setChatEnabled] = useState(true);
   const [isBanned, setIsBanned] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const navigate = useNavigate();
 
   const lastReadCommunity = userData?.lastReadChats?.community;
@@ -125,6 +128,7 @@ export default function Chat() {
     const path = activeChat === 'community' ? 'chats/community/messages' : `chats/${activeChat}/messages`;
     await addDoc(collection(db, path), {
       senderId: user.uid,
+      senderName: userData?.displayName || user.displayName || 'Unknown User',
       text: newMessage,
       timestamp: serverTimestamp()
     });
@@ -213,17 +217,19 @@ export default function Chat() {
             }
             return (
               <div key={msg.id} className={`mb-4 flex flex-col ${msg.senderId === user?.uid ? 'items-end text-right' : 'items-start text-left'}`}>
+                <span className="text-xs text-text-secondary mb-1 px-1">
+                  {msg.senderName || users.find(u => u.id === msg.senderId)?.displayName || 'Unknown User'}
+                </span>
                 <div className="group relative flex items-center gap-2">
-                  {msg.senderId === user?.uid && !msg.deleted && (
+                  {(!msg.senderId || msg.senderId === user?.uid) && !msg.deleted && (
                     <button 
                       onClick={() => {
-                        const path = activeChat === 'community' ? 'chats/community/messages' : `chats/${activeChat}/messages`;
-                        updateDoc(doc(db, path, msg.id), {
-                          deleted: true,
-                          text: "This message was deleted."
-                        });
+                        console.log("Delete button clicked, opening modal for msgId:", msg.id);
+                        setMessageToDelete(msg);
+                        setDeleteError('');
                       }}
-                      className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 p-2 transition-opacity"
+                      type="button"
+                      className="text-red-500 hover:text-red-700 p-2 relative z-50 pointer-events-auto"
                       title="Delete for everyone"
                     >
                       <Ban size={16} />
@@ -237,6 +243,11 @@ export default function Chat() {
                     )}
                   </div>
                 </div>
+                {msg.timestamp && (
+                    <span className="text-xs text-text-secondary mt-1 px-1">
+                        {msg.timestamp.toDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                    </span>
+                )}
               </div>
             );
           })}
@@ -252,6 +263,56 @@ export default function Chat() {
           <button onClick={sendMessage} className="px-6 bg-primary text-white rounded-xl font-bold hover:bg-opacity-90">Send</button>
         </div>
       </div>
+      {/* Delete Confirmation Modal */}
+      {messageToDelete && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-background-main p-6 rounded-xl max-w-sm w-full shadow-2xl border border-secondary">
+            <h3 className="text-xl font-bold text-text-main mb-4">Unsend Message</h3>
+            <p className="text-text-secondary mb-6">«Are you sure you want to unsend this message?»</p>
+            
+            {deleteError && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg text-red-500 text-sm">
+                {deleteError}
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setMessageToDelete(null);
+                  setDeleteError('');
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 text-text-main hover:bg-surface rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setIsDeleting(true);
+                  setDeleteError('');
+                  try {
+                    const path = activeChat === 'community' ? 'chats/community/messages' : `chats/${activeChat}/messages`;
+                    console.log("Attempting to delete doc at path:", path, "with id:", messageToDelete.id);
+                    await deleteDoc(doc(db, path, messageToDelete.id));
+                    console.log("Message successfully deleted from Firestore");
+                    setMessageToDelete(null);
+                  } catch (error: any) {
+                    console.error('Error deleting message:', error);
+                    setDeleteError(error.message || "Failed to delete message. Please try again later.");
+                  } finally {
+                    setIsDeleting(false);
+                  }
+                }}
+                disabled={isDeleting}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center min-w-[80px]"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

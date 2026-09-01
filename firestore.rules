@@ -160,7 +160,11 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && !isBanned(request.auth.uid);
       
       match /messages/{messageId} {
-        allow read, write: if isAuthenticated() && !isBanned(request.auth.uid);
+        allow read: if isAuthenticated() && !isBanned(request.auth.uid);
+        allow create: if isAuthenticated() && !isBanned(request.auth.uid) && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if isAuthenticated() && !isBanned(request.auth.uid) && (
+          (request.auth.uid == resource.data.senderId) || isAdmin()
+        );
       }
     }
 
