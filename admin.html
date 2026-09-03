@@ -528,6 +528,61 @@
                                     <textarea id="shutdown-description" placeholder="Custom Description (e.g., We are currently performing maintenance.)" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold"></textarea>
                                     <input id="shutdown-return-date" type="date" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
                                     <input id="shutdown-email" type="email" placeholder="Support Contact Email" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                    
+                                    <div class="bg-surface p-4 rounded-xl border border-white/10 space-y-4">
+                                        <div class="flex items-center justify-between">
+                                            <h4 class="font-bold text-lg">Maintenance & Shutdown Scheduler</h4>
+                                            <label class="flex items-center space-x-2">
+                                                <input type="checkbox" id="sch-enabled" class="form-checkbox text-primary h-5 w-5">
+                                                <span class="text-sm font-bold">Enable Scheduled Event</span>
+                                            </label>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Mode</label>
+                                            <select id="sch-mode" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                                <option value="Maintenance">Maintenance Mode</option>
+                                                <option value="Shutdown">Shutdown Mode</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Start Date</label>
+                                                <input id="sch-start-date" type="date" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Start Time</label>
+                                                <input id="sch-start-time" type="time" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Restore Date</label>
+                                                <input id="sch-restore-date" type="date" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Restore Time</label>
+                                                <input id="sch-restore-time" type="time" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Notification Message</label>
+                                            <input id="sch-announcement" type="text" placeholder="e.g., Important: NotesHub9 will be under maintenance soon. Please save your work." class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                        </div>
+
+                                        <button id="save-website-settings" class="w-full py-3 bg-primary text-secondary rounded-lg font-bold">Schedule / Save Event</button>
+                                        <button id="cancel-website-schedule" class="w-full py-2 bg-red-500 text-white rounded-lg font-bold">Cancel Scheduled Event</button>
+                                        
+                                        <div id="sch-preview" class="hidden mt-4 p-4 bg-black rounded-xl border border-white/10 space-y-2">
+                                            <h4 class="font-bold text-yellow-500">Scheduled Event</h4>
+                                            <p id="sch-preview-text" class="text-sm text-gray-300"></p>
+                                            <p id="sch-preview-countdown" class="text-lg font-mono font-bold text-white"></p>
+                                        </div>
+                                    </div>
+
                                     <button id="save-website-settings" class="w-full py-3 bg-primary text-secondary rounded-lg font-bold">Save Changes</button>
                                 </div>
                                 <div class="mt-6 pt-6 border-t border-white/10 space-y-4">
@@ -1450,6 +1505,39 @@
                 const globalFreePremium = !!settings.globalFreePremium;
                 document.getElementById('toggle-global-premium').checked = globalFreePremium;
                 document.getElementById('global-premium-status').textContent = globalFreePremium ? 'ON' : 'OFF';
+                
+                document.getElementById('sch-announcement').value = settings.announcement || '';
+                
+                const enabled = !!settings.enabled;
+                document.getElementById('sch-enabled').checked = enabled;
+                document.getElementById('sch-mode').value = settings.mode || 'Maintenance';
+                
+                if (settings.startTime) {
+                    const start = settings.startTime.toDate();
+                    document.getElementById('sch-start-date').value = start.toISOString().split('T')[0];
+                    document.getElementById('sch-start-time').value = start.toTimeString().substring(0, 5);
+                }
+                if (settings.restoreTime) {
+                    const restore = settings.restoreTime.toDate();
+                    document.getElementById('sch-restore-date').value = restore.toISOString().split('T')[0];
+                    document.getElementById('sch-restore-time').value = restore.toTimeString().substring(0, 5);
+                }
+
+                if (enabled && settings.startTime) {
+                    document.getElementById('sch-preview').classList.remove('hidden');
+                    const start = settings.startTime.toDate();
+                    const restore = settings.restoreTime ? settings.restoreTime.toDate() : null;
+                    document.getElementById('sch-preview-text').innerHTML = `
+                        <strong>Mode:</strong> ${settings.mode || 'Maintenance'}<br>
+                        <strong>Starts:</strong> ${start.toLocaleString()}<br>
+                        <strong>Restores:</strong> ${restore ? restore.toLocaleString() : 'Not Set'}<br>
+                        <strong>Status:</strong> Scheduled
+                    `;
+                    // Countdown is handled by a global or re-called function, but for now I'll just set the text
+                    document.getElementById('sch-preview-countdown').textContent = "Checking schedule...";
+                } else {
+                    document.getElementById('sch-preview').classList.add('hidden');
+                }
             } catch (e) {
                 console.error('Load website control error:', e);
             }
@@ -1475,7 +1563,10 @@
                 title: document.getElementById('shutdown-title').value,
                 description: document.getElementById('shutdown-description').value,
                 returnDate: document.getElementById('shutdown-return-date').value,
-                contactEmail: document.getElementById('shutdown-email').value
+                contactEmail: document.getElementById('shutdown-email').value,
+                announcement: document.getElementById('sch-announcement').value,
+                startTime: document.getElementById('sch-start-date').value ? Timestamp.fromDate(new Date(`${document.getElementById('sch-start-date').value}T${document.getElementById('sch-start-time').value || '00:00'}`)) : null,
+                restoreTime: document.getElementById('sch-restore-date').value ? Timestamp.fromDate(new Date(`${document.getElementById('sch-restore-date').value}T${document.getElementById('sch-restore-time').value || '00:00'}`)) : null
             };
             try {
                 const docRef = doc(db, 'website_control', 'settings');
