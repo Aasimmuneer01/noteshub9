@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase/config';
@@ -39,8 +39,9 @@ import PremiumNotificationPopup from './components/PremiumNotificationPopup';
 import WarningModal from './components/WarningModal';
 import { NewFeaturePopup } from './components/common/NewFeaturePopup';
 import ShutdownPage from './components/ShutdownPage';
+import { MaintenanceCountdown } from './components/MaintenanceCountdown';
 
-function MainLayout() {
+function MainLayout({ settings }: { settings: any }) {
   const { user, loading, verificationBlocked, userData, acceptTerms, acknowledgePremiumNotification, acknowledgeWarning, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ function MainLayout() {
   // Terms check
   const termsAccepted = !!userData?.termsAccepted;
   
-  const isAdmin = ['admin', 'superadmin'].includes(userData?.role || '');
+  const isAdmin = ['admin', 'superadmin'].includes(userData?.role || '') || user?.email === 'aasimmuneer349@gmail.com' || user?.email === 'noteshub9.official@gmail.com';
   
   useEffect(() => {
     if (user && userData && userData.lastPopupVersion !== '1.0') {
@@ -65,11 +66,13 @@ function MainLayout() {
     );
   }
   
-  if (!user) {
+  const publicRoutes = ['/terms', '/privacy', '/refund', '/copyright', '/guidelines', '/contact', '/ban-policy', '/premium-agreement'];
+  
+  if (!user && !publicRoutes.includes(location.pathname)) {
     return <AuthScreen />;
   }
 
-  if (verificationBlocked) {
+  if (user && verificationBlocked) {
     return <VerificationScreen />;
   }
 
@@ -98,6 +101,7 @@ function MainLayout() {
           });
         }
       }} />}
+      <MaintenanceCountdown settings={settings} />
       <UnreadNotification />
       <Navbar />
       <main className="flex-1 overflow-auto pt-16">
@@ -170,7 +174,15 @@ export default function App() {
     );
   }
 
-  const isShutdown = shutdownSettings && (shutdownSettings.mode ? shutdownSettings.mode !== 'Online' : !shutdownSettings.enabled);
+  
+  const now = new Date();
+  const startTime = shutdownSettings?.startTime?.toDate();
+  const restoreTime = shutdownSettings?.restoreTime?.toDate();
+  const isMaintenanceMode = (shutdownSettings?.mode === 'Maintenance' || shutdownSettings?.mode === 'Shutdown') && 
+                            startTime && now >= startTime && 
+                            (!restoreTime || now < restoreTime);
+  const isShutdown = isMaintenanceMode;
+  
 
   if (isShutdown) {
     return (
@@ -189,7 +201,7 @@ export default function App() {
       <AuthProvider>
         <Router>
           <Routes>
-            <Route path="*" element={<MainLayout />} />
+            <Route path="*" element={<MainLayout settings={shutdownSettings} />} />
           </Routes>
         </Router>
       </AuthProvider>

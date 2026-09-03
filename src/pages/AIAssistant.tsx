@@ -53,7 +53,7 @@ export default function AIAssistant() {
             });
             setLoadingAssistants(false);
         }, (error) => {
-            console.error("Error fetching assistants:", error);
+            console.warn("Could not fetch assistants:", error);
             setLoadingAssistants(false);
         });
         return unsubscribe;

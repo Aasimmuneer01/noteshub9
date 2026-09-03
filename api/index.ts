@@ -1,3 +1,6 @@
+import { getFirestore } from "firebase-admin/firestore";
+import { initializeApp } from "firebase-admin/app";
+try { initializeApp(); } catch(e) {}
 import dotenv from 'dotenv';
 dotenv.config();
 import express from 'express';

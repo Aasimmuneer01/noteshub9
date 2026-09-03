@@ -1,14 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, User, Bot } from 'lucide-react';
+import { Home, BookOpen, User, Bot, Search } from 'lucide-react';
 
 export default function BottomNav() {
   const location = useLocation();
 
   const navItems = [
     { name: 'Home', path: '/', icon: Home },
-    { name: 'Resources', path: '/resources', icon: BookOpen },
-    { name: 'AI', path: '/ai-assistant', icon: Bot },
-    { name: 'Profile', path: '/profile', icon: User },
+    { name: 'Search', path: '/resources?focus=search', icon: Search },
+    { name: 'Notes', path: '/resources', icon: BookOpen },
+    { name: 'Account', path: '/profile', icon: User },
   ];
 
   return (

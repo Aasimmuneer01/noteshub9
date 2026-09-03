@@ -43,6 +43,10 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   };
+  if (error instanceof Error && error.message.includes("permission")) {
+    console.warn('Firestore Permission Denied (ignored): ', errInfo.path);
+    return;
+  }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 }

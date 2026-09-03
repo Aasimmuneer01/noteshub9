@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, LogOut, Shield, User, Bot, Bookmark, Folder, Star, Settings } from 'lucide-react';
+import { Menu, X, LogOut, Shield, User, Bot, Bookmark, Folder, Star, Settings, MessageSquare } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import ProfileModal from './ProfileModal';
 import PremiumModal from './PremiumModal';
@@ -12,7 +12,7 @@ export default function Navbar() {
   const [showDropdown, setShowDropdown] = useState(false);
   const { logout, userData, user, isPremium } = useAuth();
 
-  const isAdmin = userData?.role === 'admin' || userData?.role === 'superadmin' || user?.email === 'aasimmuneer349@gmail.com';
+  const isAdmin = userData?.role === 'admin' || userData?.role === 'superadmin' || user?.email === 'aasimmuneer349@gmail.com' || user?.email === 'noteshub9.official@gmail.com';
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-background-main/80 backdrop-blur-md border-b border-surface">
@@ -29,10 +29,10 @@ export default function Navbar() {
           <Link to="/" className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors">Home</Link>
           <Link to="/resources" className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors">Resources</Link>
           <Link to="/ai-assistant" className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors flex items-center gap-1.5"><Bot size={16}/> AI Assistant</Link>
+          <Link to={user ? "/chat" : "/login"} className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors flex items-center gap-1.5"><MessageSquare size={16}/> Global Chat</Link>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Profile Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
@@ -73,6 +73,7 @@ export default function Navbar() {
             <Link to="/" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Home</Link>
             <Link to="/resources" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Resources</Link>
             <Link to="/ai-assistant" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">AI Assistant</Link>
+            <Link to="/chat" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Global Chat</Link>
             {isPremium && (
                 <>
                     <Link to="/bookmarks" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Bookmarks</Link>

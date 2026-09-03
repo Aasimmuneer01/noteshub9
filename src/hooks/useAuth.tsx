@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Admins/mods are always premium
-      const isAdmin = ['admin', 'superadmin', 'moderator'].includes(userData.role || '');
+      const isAdmin = ['admin', 'superadmin', 'moderator'].includes(userData.role || '') || firebaseUser.email === 'aasimmuneer349@gmail.com' || firebaseUser.email === 'noteshub9.official@gmail.com';
       if (isAdmin) {
         setIsPremium(true);
         return;

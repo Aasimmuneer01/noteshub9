@@ -7,7 +7,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return request.auth != null && (
-        ("email" in request.auth.token && request.auth.token.email in ['admin@example.com', 'aasimmuneer349@gmail.com', 'admin@eduplatform.com', 'mahnoormuneer4999@gmail.com', 'mahnoor4999@gmail.com']) ||
+        ("email" in request.auth.token && request.auth.token.email in ['admin@example.com', 'aasimmuneer349@gmail.com', 'admin@eduplatform.com', 'mahnoormuneer4999@gmail.com', 'mahnoor4999@gmail.com', 'noteshub9.official@gmail.com']) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') in ['admin', 'superadmin', 'moderator'])
       );
     }
@@ -143,7 +143,7 @@ service cloud.firestore {
     }
 
     match /ai_settings/{document=**} {
-      allow read: if isAdmin();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
