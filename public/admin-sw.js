@@ -1,4 +1,4 @@
-const CACHE_NAME = 'noteshub9-admin-cache-v3';
+const CACHE_NAME = 'noteshub9-admin-cache-v4';
 const urlsToCache = [
   '/noteshub9/admin.html',
   '/noteshub9/favicon.png',
@@ -29,6 +29,10 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request)
+      .then(response => {
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
