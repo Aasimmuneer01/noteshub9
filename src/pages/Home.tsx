@@ -135,7 +135,7 @@ export default function Home() {
               <div className="bg-primary/20 p-1.5 rounded-lg">
                 <MessageSquare size={18} className="text-primary" />
               </div>
-              Join the Global Student Chat
+              Global Chat
               <ArrowRight size={18} className="ml-1 text-text-muted" />
             </button>
           </motion.div>

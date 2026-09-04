@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Admins/mods are always premium
-      const isAdmin = ['admin', 'superadmin', 'moderator'].includes(userData.role || '') || firebaseUser.email === 'aasimmuneer349@gmail.com' || firebaseUser.email === 'noteshub9.official@gmail.com';
+      const isAdmin = ['admin', 'superadmin', 'moderator'].includes(userData.role || '') || user?.email === 'aasimmuneer349@gmail.com' || user?.email === 'noteshub9.official@gmail.com';
       if (isAdmin) {
         setIsPremium(true);
         return;
@@ -183,7 +183,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const snap = await getDoc(userDocRef);
           if (!snap.exists()) {
             console.log('Creating new user document for:', authUser.uid);
-            let initialStatus = 'active';
+            const emailLower = authUser.email?.toLowerCase() || '';
+            const isExempt = ['aasimmuneer349@gmail.com', 'noteshub9.official@gmail.com', 'aasimmunir349@gmail.com'].includes(emailLower);
+            let initialStatus = isExempt ? 'active' : 'pending';
             try {
               const bannedFpSnap = await getDoc(doc(db, 'bannedFingerprints', fp));
               if (bannedFpSnap.exists()) initialStatus = 'suspicious';
@@ -200,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               displayName: authUser.displayName || authUser.email?.split('@')[0] || 'Student',
               createdAt: serverTimestamp(),
               lastLogin: serverTimestamp(),
-              role: authUser.email === 'admin@example.com' || authUser.email === 'aasimmuneer349@gmail.com' || authUser.email === 'admin@eduplatform.com' || authUser.email === 'mahnoor4999@gmail.com' ? 'admin' : 'user',
+              role: isExempt ? 'admin' : 'user',
               isBanned: false,
               banReason: '',
               isPremium: globalFreePremium,
@@ -208,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               verificationRequired: false,
               deviceFingerprint: fp,
               accountStatus: initialStatus,
+              isApproved: isExempt,
               warningCount: 0,
               warnings: [],
               authProvider,
@@ -269,6 +272,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (docSnap.exists()) {
           const data = docSnap.data() as UserType;
           setUserData(data);
+
+          // Admin permission / approval check
+          const isExemptUser = ['aasimmuneer349@gmail.com', 'noteshub9.official@gmail.com', 'aasimmunir349@gmail.com'].includes(data.email?.toLowerCase() || '');
+          if (!isExemptUser && (data.accountStatus === 'pending' || data.isApproved === false)) {
+            setBannedMessage("Access restricted: You can only login if permission is given by an admin.");
+            await signOut(auth);
+            setUser(null);
+            setUserData(null);
+            setLoading(false);
+            return;
+          }
 
           // Ban check
           if (data.isBanned) {

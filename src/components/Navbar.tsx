@@ -4,8 +4,9 @@ import { Menu, X, LogOut, Shield, User, Bot, Bookmark, Folder, Star, Settings, M
 import { useAuth } from '../hooks/useAuth';
 import ProfileModal from './ProfileModal';
 import PremiumModal from './PremiumModal';
+import { MaintenanceCountdown } from './MaintenanceCountdown';
 
-export default function Navbar() {
+export default function Navbar({ settings }: { settings?: any }) {
   const [isOpen, setIsOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showPremium, setShowPremium] = useState(false);
@@ -15,7 +16,8 @@ export default function Navbar() {
   const isAdmin = userData?.role === 'admin' || userData?.role === 'superadmin' || user?.email === 'aasimmuneer349@gmail.com' || user?.email === 'noteshub9.official@gmail.com';
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-background-main/80 backdrop-blur-md border-b border-surface">
+    <nav className="fixed top-0 w-full z-50 bg-background-main/90 backdrop-blur-md border-b border-surface shadow-md">
+      <MaintenanceCountdown settings={settings} />
       <ProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
       <PremiumModal isOpen={showPremium} onClose={() => setShowPremium(false)} />
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">

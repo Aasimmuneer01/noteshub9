@@ -27,6 +27,7 @@ export interface User {
   verificationRequired?: boolean;
   deviceFingerprint?: string;
   accountStatus?: 'active' | 'banned' | 'suspicious' | 'warning' | string;
+  isApproved?: boolean;
   isPremium?: boolean;
   isEmailVerified?: boolean;
   // Premium details

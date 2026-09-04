@@ -101,10 +101,9 @@ function MainLayout({ settings }: { settings: any }) {
           });
         }
       }} />}
-      <MaintenanceCountdown settings={settings} />
       <UnreadNotification />
-      <Navbar />
-      <main className="flex-1 overflow-auto pt-16">
+      <Navbar settings={settings} />
+      <main className="flex-1 overflow-auto pt-20">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/resources" element={<Resources />} />
@@ -133,10 +132,37 @@ function MainLayout({ settings }: { settings: any }) {
   );
 }
 
-export default function App() {
+const EXEMPT_ADMINS = [
+  'aasimmunir349@gmail.com',
+  'aasimmuneer349@gmail.com',
+  'noteshub9.official@gmail.com'
+];
+
+function AppContent() {
   const [shutdownSettings, setShutdownSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isFirestoreOnline, setIsFirestoreOnline] = useState(true);
+  const [tick, setTick] = useState(0);
+  const { user, loading: authLoading, userData } = useAuth();
+  const location = useLocation();
+
+  useEffect(() => {
+    try {
+      localStorage.removeItem('maintenance_mode');
+      localStorage.removeItem('shutdown_mode');
+      localStorage.removeItem('maintenance');
+      localStorage.removeItem('shutdown');
+      sessionStorage.removeItem('maintenance_mode');
+      sessionStorage.removeItem('shutdown_mode');
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'website_control', 'settings'), (docSnap) => {
@@ -155,7 +181,7 @@ export default function App() {
     return unsub;
   }, []);
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-background-main flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -174,34 +200,125 @@ export default function App() {
     );
   }
 
+  const nowMs = new Date().getTime();
   
-  const now = new Date();
-  const startTime = shutdownSettings?.startTime?.toDate();
-  const restoreTime = shutdownSettings?.restoreTime?.toDate();
-  const isMaintenanceMode = (shutdownSettings?.mode === 'Maintenance' || shutdownSettings?.mode === 'Shutdown') && 
-                            startTime && now >= startTime && 
-                            (!restoreTime || now < restoreTime);
-  const isShutdown = isMaintenanceMode;
+  let startMs: number | undefined = undefined;
+  if (shutdownSettings?.startTime) {
+    if (typeof shutdownSettings.startTime.toDate === 'function') {
+      startMs = shutdownSettings.startTime.toDate().getTime();
+    } else if (shutdownSettings.startTime instanceof Date) {
+      startMs = shutdownSettings.startTime.getTime();
+    } else if (typeof shutdownSettings.startTime === 'string' || typeof shutdownSettings.startTime === 'number') {
+      startMs = new Date(shutdownSettings.startTime).getTime();
+    }
+  }
+
+  let restoreMs: number | undefined = undefined;
+  if (shutdownSettings?.restoreTime) {
+    if (typeof shutdownSettings.restoreTime.toDate === 'function') {
+      restoreMs = shutdownSettings.restoreTime.toDate().getTime();
+    } else if (shutdownSettings.restoreTime instanceof Date) {
+      restoreMs = shutdownSettings.restoreTime.getTime();
+    } else if (typeof shutdownSettings.restoreTime === 'string' || typeof shutdownSettings.restoreTime === 'number') {
+      restoreMs = new Date(shutdownSettings.restoreTime).getTime();
+    }
+  }
   
+  const userEmailLower = user?.email?.toLowerCase() || '';
+  const isExemptAdmin = EXEMPT_ADMINS.some(email => email.toLowerCase() === userEmailLower) || ['admin', 'superadmin'].includes(userData?.role || '');
+  const isOwnerBypass = isExemptAdmin;
+
+  const scheduleEnabled = !!shutdownSettings?.enabled;
+  const scheduleMode = shutdownSettings?.mode || 'Maintenance';
+
+  const isInvalidSchedule = startMs && restoreMs && restoreMs <= startMs;
+  const hasValidTimestamps = startMs && restoreMs && !isInvalidSchedule;
+
+  if (isInvalidSchedule) {
+    console.log("[Scheduler] INVALID SCHEDULE");
+    console.log("[Scheduler] restoreAt must be later than startAt");
+    console.log("[Scheduler] Ignoring scheduled state");
+  }
+
+  const scheduleUpcoming = scheduleEnabled && hasValidTimestamps && nowMs < startMs;
+  const scheduleActive = scheduleEnabled && hasValidTimestamps && nowMs >= startMs && nowMs < restoreMs;
+  const scheduleExpired = scheduleEnabled && hasValidTimestamps && nowMs >= restoreMs;
+
+  let scheduledMaintenance = false;
+  let scheduledShutdown = false;
+
+  if (scheduleActive) {
+    if (scheduleMode === 'Shutdown') {
+      scheduledShutdown = true;
+    } else {
+      scheduledMaintenance = true;
+    }
+  }
+
+  let scheduleStatus = 'DISABLED';
+  if (!scheduleEnabled) {
+    scheduleStatus = 'DISABLED';
+  } else if (isInvalidSchedule) {
+    scheduleStatus = 'INVALID';
+  } else if (scheduleUpcoming) {
+    scheduleStatus = 'UPCOMING';
+  } else if (scheduleActive) {
+    scheduleStatus = 'ACTIVE';
+  } else if (scheduleExpired) {
+    scheduleStatus = 'EXPIRED';
+  }
+
+  // Maintenance and Shutdown are strictly determined by the scheduler ONLY.
+  let maintenanceActive = scheduledMaintenance;
+  let shutdownActive = scheduledShutdown;
+
+  let maintenanceReason = 'none';
+  if (scheduledMaintenance) {
+    maintenanceReason = 'scheduledMaintenance';
+  } else if (scheduledShutdown) {
+    maintenanceReason = 'scheduledShutdown';
+  }
+
+  const isMaintenanceMode = maintenanceActive || shutdownActive;
+  const activeStatusMode = shutdownActive ? 'Shutdown' : (maintenanceActive ? 'Maintenance' : 'Online');
+  const isExempt = isOwnerBypass;
+  const isShutdown = isMaintenanceMode && !isExempt;
+
+  console.log("scheduleEnabled:", scheduleEnabled);
+  console.log("scheduleMode:", scheduleMode);
+  console.log("startAt:", startMs);
+  console.log("restoreAt:", restoreMs);
+  console.log("currentTime:", nowMs);
+  console.log("scheduleStatus:", scheduleStatus);
+  console.log("effectiveMaintenance:", maintenanceActive);
+  console.log("effectiveShutdown:", shutdownActive);
+  console.log("authenticatedUser:", user?.email || 'guest');
+  console.log("isOwnerBypass:", isOwnerBypass);
+  console.log("maintenanceReason:", maintenanceReason);
 
   if (isShutdown) {
     return (
       <ShutdownPage 
-        status={shutdownSettings.mode || 'Temporary'} 
-        title={shutdownSettings.title} 
-        description={shutdownSettings.description}
-        returnDate={shutdownSettings.returnDate}
-        contactEmail={shutdownSettings.contactEmail}
+        status={activeStatusMode} 
+        title={shutdownSettings?.title} 
+        description={shutdownSettings?.description}
+        returnDate={shutdownSettings?.returnDate}
+        contactEmail={shutdownSettings?.contactEmail}
+        restoreTime={shutdownSettings?.restoreTime}
       />
     );
   }
 
+  return <MainLayout settings={shutdownSettings} />;
+}
+
+export default function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
         <Router>
           <Routes>
-            <Route path="*" element={<MainLayout settings={shutdownSettings} />} />
+            <Route path="*" element={<AppContent />} />
           </Routes>
         </Router>
       </AuthProvider>
