@@ -43,6 +43,9 @@ export default function CreatorSection() {
     return null; // Or a minimal placeholder
   }
 
+  // Enforce official contact email
+  const contactEmail = 'noteshub9.official@gmail.com';
+
   return (
     <section className="px-6 pb-20">
       <div className="max-w-4xl mx-auto">
@@ -86,14 +89,12 @@ export default function CreatorSection() {
               </p>
 
               <div className="flex flex-wrap gap-4 pt-2 justify-center md:justify-start">
-                {creator.email && (
-                  <a 
-                    href={`mailto:${creator.email}`} 
-                    className="flex items-center justify-center p-3 rounded-full bg-background-main border border-secondary text-gray-400 hover:text-white hover:border-primary hover:bg-primary/10 transition-colors"
-                  >
-                    <Mail className="w-5 h-5" />
-                  </a>
-                )}
+                <a 
+                  href={`mailto:${contactEmail}`} 
+                  className="flex items-center justify-center p-3 rounded-full bg-background-main border border-secondary text-gray-400 hover:text-white hover:border-primary hover:bg-primary/10 transition-colors"
+                >
+                  <Mail className="w-5 h-5" />
+                </a>
                 {creator.github && (
                   <a 
                     href={creator.github} 
@@ -125,14 +126,12 @@ export default function CreatorSection() {
                   </a>
                 )}
                 
-                {creator.email && (
-                  <a 
-                    href={`mailto:${creator.email}`} 
-                    className="ml-0 md:ml-auto inline-flex items-center gap-2 px-6 py-3 bg-white text-secondary font-bold rounded-lg hover:bg-gray-100 transition-colors mt-4 md:mt-0"
-                  >
-                    Contact Me
-                  </a>
-                )}
+                <a 
+                  href={`mailto:${contactEmail}`} 
+                  className="ml-0 md:ml-auto inline-flex items-center gap-2 px-6 py-3 bg-white text-secondary font-bold rounded-lg hover:bg-gray-100 transition-colors mt-4 md:mt-0"
+                >
+                  Contact Me
+                </a>
               </div>
             </div>
           </div>
