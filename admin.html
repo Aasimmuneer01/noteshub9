@@ -26,6 +26,35 @@
             --background: #020617;
             --surface: #0a0f1e;
         }
+        html.light-theme {
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --secondary: #f1f5f9;
+        }
+        html.light-theme body,
+        html.light-theme .text-white {
+            color: #0f172a !important;
+        }
+        html.light-theme .bg-background {
+            background-color: var(--background) !important;
+        }
+        html.light-theme .bg-surface {
+            background-color: var(--surface) !important;
+            border-color: #e2e8f0 !important;
+        }
+        html.light-theme .bg-black {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+        html.light-theme .text-gray-300,
+        html.light-theme .text-gray-400 {
+            color: #475569 !important;
+        }
+        html.light-theme .border-white\/5,
+        html.light-theme .border-white\/10 {
+            border-color: #e2e8f0 !important;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background);
@@ -61,6 +90,13 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
     </style>
+    <script>
+        try {
+            if (localStorage.getItem('noteshub9_light_theme') === 'true') {
+                document.documentElement.classList.add('light-theme');
+            }
+        } catch (e) {}
+    </script>
 </head>
 <body class="antialiased">
     <!-- Auth Overlay -->
@@ -989,7 +1025,7 @@
                 const userDoc = await getDoc(doc(db, 'users', cred.user.uid));
                 const userData = userDoc.data();
                 
-                const isAdminEmail = ['admin@example.com', 'aasimmuneer349@gmail.com', 'admin@eduplatform.com'].includes(cred.user.email);
+                const isAdminEmail = ['admin@example.com', 'aasimunir349@gmail.com', 'noteshub9.official@gmail.com', 'admin@eduplatform.com'].includes(cred.user.email);
                 if (isAdminEmail || ['admin', 'superadmin', 'moderator'].includes(userData?.role)) {
                     // Success
                 } else {
@@ -1008,7 +1044,7 @@
             if (user) {
                 const userDoc = await getDoc(doc(db, 'users', user.uid));
                 const data = userDoc.data();
-                const isAdminEmail = ['admin@example.com', 'aasimmuneer349@gmail.com', 'admin@eduplatform.com'].includes(user.email);
+                const isAdminEmail = ['admin@example.com', 'aasimunir349@gmail.com', 'noteshub9.official@gmail.com', 'admin@eduplatform.com'].includes(user.email);
                 if (isAdminEmail || ['admin', 'superadmin', 'moderator'].includes(data?.role)) {
                     currentUser = { uid: user.uid, ...data, role: data?.role || (isAdminEmail ? 'admin' : 'user') };
                     authOverlay.classList.add('hidden');
@@ -1495,17 +1531,58 @@
                     document.getElementById('sch-restore-time').value = restore.toTimeString().substring(0, 5);
                 }
 
+                if (window.schTimer) clearInterval(window.schTimer);
                 if (enabled && settings.startTime) {
                     document.getElementById('sch-preview').classList.remove('hidden');
                     const start = settings.startTime.toDate();
                     const restore = settings.restoreTime ? settings.restoreTime.toDate() : null;
-                    document.getElementById('sch-preview-text').innerHTML = `
-                        <strong>Mode:</strong> ${settings.mode || 'Maintenance'}<br>
-                        <strong>Starts:</strong> ${start.toLocaleString()}<br>
-                        <strong>Restores:</strong> ${restore ? restore.toLocaleString() : 'Not Set'}<br>
-                        <strong>Status:</strong> Scheduled
-                    `;
-                    document.getElementById('sch-preview-countdown').textContent = "Scheduler Active";
+                    
+                    function updateSchStatus() {
+                        const nowMs = Date.now();
+                        const startMs = start.getTime();
+                        const restoreMs = restore ? restore.getTime() : 0;
+                        let schedStatus = 'Upcoming';
+                        let isInvalid = restoreMs && restoreMs <= startMs;
+                        
+                        if (isInvalid) {
+                            schedStatus = '<span class="text-red-500">Invalid (Restore before Start)</span>';
+                        } else if (startMs && nowMs < startMs) {
+                            schedStatus = '<span class="text-yellow-500">Upcoming</span>';
+                        } else if (startMs && restoreMs && nowMs >= startMs && nowMs < restoreMs) {
+                            schedStatus = '<span class="text-red-500">Active</span>';
+                        } else if (restoreMs && nowMs >= restoreMs) {
+                            schedStatus = '<span class="text-gray-500">Expired</span>';
+                        } else if (startMs && nowMs >= startMs && !restoreMs) {
+                            schedStatus = '<span class="text-red-500">Active (Indefinite)</span>';
+                        }
+
+                        document.getElementById('sch-preview-text').innerHTML = `
+                            <strong>Mode:</strong> ${settings.mode || 'Maintenance'}<br>
+                            <strong>Starts:</strong> ${start.toLocaleString()}<br>
+                            <strong>Restores:</strong> ${restore ? restore.toLocaleString() : 'Not Set'}<br>
+                            <strong>Status:</strong> ${schedStatus}
+                        `;
+
+                        if (nowMs < startMs && !isInvalid) {
+                            const diff = startMs - nowMs;
+                            const h = Math.floor(diff / 3600000);
+                            const m = Math.floor((diff % 3600000) / 60000);
+                            const s = Math.floor((diff % 60000) / 1000);
+                            document.getElementById('sch-preview-countdown').textContent = `Starts in: ${h}h ${m}m ${s}s`;
+                        } else if (restoreMs && nowMs >= startMs && nowMs < restoreMs) {
+                            const diff = restoreMs - nowMs;
+                            const h = Math.floor(diff / 3600000);
+                            const m = Math.floor((diff % 3600000) / 60000);
+                            const s = Math.floor((diff % 60000) / 1000);
+                            document.getElementById('sch-preview-countdown').textContent = `Time until restore: ${h}h ${m}m ${s}s`;
+                        } else {
+                            document.getElementById('sch-preview-countdown').textContent = "";
+                        }
+                    }
+                    
+                    updateSchStatus();
+                    window.schTimer = setInterval(updateSchStatus, 1000);
+
                 } else {
                     document.getElementById('sch-preview').classList.add('hidden');
                 }

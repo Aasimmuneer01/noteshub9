@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, LogOut, Shield, User, Bot, Bookmark, Folder, Star, Settings, MessageSquare } from 'lucide-react';
+import { Menu, X, LogOut, Shield, User, Bot, Bookmark, Folder, Star, Settings, MessageSquare, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import ProfileModal from './ProfileModal';
 import PremiumModal from './PremiumModal';
@@ -12,6 +12,20 @@ export default function Navbar({ settings }: { settings?: any }) {
   const [showPremium, setShowPremium] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const { logout, userData, user, isPremium } = useAuth();
+
+  const [isLightMode, setIsLightMode] = useState(() => {
+    const saved = localStorage.getItem('noteshub9_light_theme');
+    return saved !== null ? saved === 'true' : false; // Default OFF
+  });
+
+  useEffect(() => {
+    localStorage.setItem('noteshub9_light_theme', String(isLightMode));
+    if (isLightMode) {
+      document.documentElement.classList.add('light-theme');
+    } else {
+      document.documentElement.classList.remove('light-theme');
+    }
+  }, [isLightMode]);
 
   const isAdmin = userData?.role === 'admin' || userData?.role === 'superadmin' || user?.email === 'aasimmuneer349@gmail.com' || user?.email === 'noteshub9.official@gmail.com';
 
@@ -34,7 +48,16 @@ export default function Navbar({ settings }: { settings?: any }) {
           <Link to={user ? "/chat" : "/login"} className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors flex items-center gap-1.5"><MessageSquare size={16}/> Global Chat</Link>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsLightMode(!isLightMode)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-surface-border text-xs font-semibold text-text-main hover:bg-surface/80 transition-all shadow-sm cursor-pointer"
+            title="Toggle Website Theme"
+          >
+            {isLightMode ? <Sun size={14} className="text-amber-500" /> : <Moon size={14} className="text-primary" />}
+            <span className="hidden sm:inline">{isLightMode ? 'Light' : 'Dark'}</span>
+          </button>
+
           <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
@@ -82,6 +105,13 @@ export default function Navbar({ settings }: { settings?: any }) {
                     <Link to="/folders" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Folders</Link>
                 </>
             )}
+            <button
+              onClick={() => setIsLightMode(!isLightMode)}
+              className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg flex items-center justify-between"
+            >
+              <span>Theme: {isLightMode ? 'Light' : 'Dark'}</span>
+              {isLightMode ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-primary" />}
+            </button>
             <button onClick={() => {logout(); setIsOpen(false)}} className="p-3 text-sm font-bold text-red-500 hover:bg-surface rounded-lg text-left">Logout</button>
         </div>
       )}
