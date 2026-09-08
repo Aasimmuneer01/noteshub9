@@ -9,6 +9,8 @@ import { useAuth } from '../hooks/useAuth';
 import { setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../firebase/utils';
 import { Folder } from '../types';
+import LoginGate from '../components/LoginGate';
+import AuthScreen from '../components/AuthScreen';
 
 const SUBJECTS = ['All', 'Maths', 'English', 'Biology', 'Chemistry', 'Physics', 'Geography', 'History', 'Civics', 'Computer', 'Islamic Studies', 'Urdu'];
 
@@ -23,6 +25,8 @@ export default function Resources() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [userBookmarks, setUserBookmarks] = useState<string[]>([]);
   const [activeFolderMenu, setActiveFolderMenu] = useState<string | null>(null);
+  const [showLoginGate, setShowLoginGate] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const currentSubject = searchParams.get('subject') || 'All';
 
@@ -332,10 +336,14 @@ export default function Resources() {
                         </button>
                         <button 
                           onClick={(e) => {
+                            e.preventDefault();
+                            if (!user) {
+                              setShowLoginGate(true);
+                              return;
+                            }
                             if (isPremium) {
                               handleDownload(e, resource);
                             } else {
-                              e.preventDefault();
                               alert("Ask the admin to give you the premium access to download any resources");
                             }
                           }}
@@ -357,6 +365,36 @@ export default function Resources() {
           )}
         </div>
       </div>
+
+      {showLoginGate && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md">
+            <LoginGate 
+              onAuth={() => {
+                setShowLoginGate(false);
+                setShowAuthModal(true);
+              }} 
+              onLeave={() => {
+                setShowLoginGate(false);
+              }} 
+            />
+          </div>
+        </div>
+      )}
+
+      {showAuthModal && (
+        <div className="fixed inset-0 z-50 bg-black overflow-auto">
+          <div className="absolute top-4 right-4 z-50">
+            <button 
+              onClick={() => setShowAuthModal(false)}
+              className="p-2 bg-surface text-text-main rounded-full hover:bg-surface/80 cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+          <AuthScreen />
+        </div>
+      )}
     </div>
   );
 }

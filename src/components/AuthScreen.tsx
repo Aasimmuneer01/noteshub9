@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { ArrowRight, AlertCircle, CheckCircle, Check } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -124,7 +125,8 @@ const CinematicFireAmbient = () => {
 };
 
 export default function AuthScreen() {
-  const { login, signup, continueWithGoogle, forgotPassword, bannedMessage, clearBannedMessage } = useAuth();
+  const { user, login, signup, continueWithGoogle, forgotPassword, bannedMessage, clearBannedMessage } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -133,6 +135,12 @@ export default function AuthScreen() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   if (bannedMessage) {
     return (
@@ -227,7 +235,7 @@ export default function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-[#020000] flex items-center justify-center p-4 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-[#020000] flex items-center justify-center p-4 relative overflow-y-auto py-8 font-sans">
       <CinematicFireAmbient />
 
       <motion.div 

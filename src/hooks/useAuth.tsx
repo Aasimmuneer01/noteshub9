@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (userData.premiumExpiry || userData.premiumExpiryDate) {
-        const expiry = (userData.premiumExpiry || userData.premiumExpiryDate).toDate();
+        const expiry = (userData.premiumExpiry || userData.premiumExpiryDate)?.toDate ? (userData.premiumExpiry || userData.premiumExpiryDate).toDate() : new Date(userData.premiumExpiry || userData.premiumExpiryDate);
         const active = new Date() < expiry;
         setIsPremium(active);
         return;
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up a timer if it's premium and has an expiry
     let timer: NodeJS.Timeout;
     if (userData?.isPremium && (userData.premiumExpiry || userData.premiumExpiryDate) && (userData.premiumPlan !== 'Lifetime' && userData.premiumType !== 'Lifetime')) {
-      const expiry = (userData.premiumExpiry || userData.premiumExpiryDate).toDate().getTime();
+      const expiry = (userData.premiumExpiry || userData.premiumExpiryDate)?.toDate ? (userData.premiumExpiry || userData.premiumExpiryDate).toDate().getTime() : new Date(userData.premiumExpiry || userData.premiumExpiryDate).getTime();
       const now = new Date().getTime();
       const diff = expiry - now;
 
@@ -326,7 +326,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           // Automatic Premium Expiry Check
           if (data.isPremium && (data.premiumExpiry || data.premiumExpiryDate) && (data.premiumPlan !== 'Lifetime' && data.premiumType !== 'Lifetime')) {
-            const expiry = (data.premiumExpiry || data.premiumExpiryDate).toDate();
+            const expiry = (data.premiumExpiry || data.premiumExpiryDate)?.toDate ? (data.premiumExpiry || data.premiumExpiryDate).toDate() : new Date(data.premiumExpiry || data.premiumExpiryDate);
             if (new Date() >= expiry) {
               console.log("Premium expired for user:", authUser.uid);
               // Local update happens automatically via checkPremium derived state
@@ -416,7 +416,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = otpDoc.data();
     const now = new Date();
     
-    if (data.code === code && data.expiresAt.toDate() > now) {
+    if (data.code === code && (data.expiresAt?.toDate ? data.expiresAt.toDate() : new Date(data.expiresAt)) > now) {
       // Success! Update user doc
       await updateDoc(doc(db, 'users', auth.currentUser.uid), {
         isEmailVerified: true,

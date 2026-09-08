@@ -251,7 +251,7 @@ export default function Home() {
               </div>
 
               <Link 
-                to={user ? "/ai-assistant" : "/login"} 
+                to="/ai-assistant" 
                 className="w-full py-4 bg-primary text-white rounded-xl font-bold text-center hover:bg-opacity-90 transition-all flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(var(--color-primary),0.3)]"
               >
                 Try AI Assistant <ArrowRight size={18} />
@@ -288,7 +288,7 @@ export default function Home() {
               )}
 
               <Link 
-                to={user ? "/profile#subscription" : "/login"} 
+                to="/profile#subscription" 
                 className="w-full py-4 bg-white text-indigo-900 rounded-xl font-bold text-center hover:bg-gray-100 transition-all flex items-center justify-center gap-2 shadow-lg"
               >
                 {isPremium ? 'Manage Subscription' : 'Upgrade to Premium'}

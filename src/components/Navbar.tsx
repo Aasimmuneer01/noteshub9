@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, LogOut, Shield, User, Bot, Bookmark, Folder, Star, Settings, MessageSquare, Sun, Moon } from 'lucide-react';
+import { Menu, X, LogOut, Shield, User, Bot, Bookmark, Folder, Star, Settings, MessageSquare, Sun, Moon, LogIn } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import ProfileModal from './ProfileModal';
 import PremiumModal from './PremiumModal';
+import AuthScreen from './AuthScreen';
 import { MaintenanceCountdown } from './MaintenanceCountdown';
 
 export default function Navbar({ settings }: { settings?: any }) {
@@ -34,6 +35,7 @@ export default function Navbar({ settings }: { settings?: any }) {
       <MaintenanceCountdown settings={settings} />
       <ProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
       <PremiumModal isOpen={showPremium} onClose={() => setShowPremium(false)} />
+
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 text-xl font-bold tracking-tighter">
           <img src="/favicon.png" alt="Logo" className="w-12 h-12 rounded-full" />
@@ -44,8 +46,12 @@ export default function Navbar({ settings }: { settings?: any }) {
         <div className="hidden md:flex items-center gap-6 pt-4">
           <Link to="/" className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors">Home</Link>
           <Link to="/resources" className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors">Resources</Link>
-          <Link to="/ai-assistant" className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors flex items-center gap-1.5"><Bot size={16}/> AI Assistant</Link>
-          <Link to={user ? "/chat" : "/login"} className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors flex items-center gap-1.5"><MessageSquare size={16}/> Global Chat</Link>
+          {user && (
+            <>
+              <Link to="/ai-assistant" className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors flex items-center gap-1.5"><Bot size={16}/> AI Assistant</Link>
+              <Link to="/chat" className="text-sm font-medium text-text-main/70 hover:text-text-main transition-colors flex items-center gap-1.5"><MessageSquare size={16}/> Global Chat</Link>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -58,35 +64,45 @@ export default function Navbar({ settings }: { settings?: any }) {
             <span className="hidden sm:inline">{isLightMode ? 'Light' : 'Dark'}</span>
           </button>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-2 p-1.5 rounded-full bg-surface hover:bg-surface/80 transition-colors"
+          {user ? (
+            <div className="relative">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="flex items-center gap-2 p-1.5 rounded-full bg-surface hover:bg-surface/80 transition-colors cursor-pointer"
+              >
+                <User size={20} className="text-text-main" />
+              </button>
+              
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-56 bg-surface border border-surface rounded-xl shadow-xl p-2 z-[100]">
+                  {isPremium && (
+                    <>
+                      <Link to="/bookmarks" className="flex items-center gap-2 px-3 py-2 text-sm text-text-main hover:bg-background-main rounded-lg" onClick={() => setShowDropdown(false)}><Bookmark size={16}/> Bookmarks</Link>
+                      <Link to="/folders" className="flex items-center gap-2 px-3 py-2 text-sm text-text-main hover:bg-background-main rounded-lg" onClick={() => setShowDropdown(false)}><Folder size={16}/> Folders</Link>
+                      <button onClick={() => {setShowPremium(true); setShowDropdown(false)}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-background-main rounded-lg cursor-pointer"><Star size={16}/> Premium</button>
+                    </>
+                  )}
+                  {isAdmin && (
+                    <a href="/admin.html" className="flex items-center gap-2 px-3 py-2 text-sm text-purple-400 hover:bg-background-main rounded-lg"><Shield size={16} /> Admin Panel</a>
+                  )}
+                  <button onClick={() => {setShowProfile(true); setShowDropdown(false)}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-main hover:bg-background-main rounded-lg cursor-pointer"><Settings size={16}/> Settings</button>
+                  <div className="border-t border-surface my-1" />
+                  <button onClick={() => {logout(); setShowDropdown(false)}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-background-main rounded-lg cursor-pointer"><LogOut size={16}/> Logout</button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              to="/login"
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-secondary rounded-lg font-bold text-xs uppercase tracking-wider hover:bg-primary/90 transition-all shadow-md cursor-pointer"
             >
-              <User size={20} className="text-text-main" />
-            </button>
-            
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 w-56 bg-surface border border-surface rounded-xl shadow-xl p-2 z-[100]">
-                {isPremium && (
-                  <>
-                    <Link to="/bookmarks" className="flex items-center gap-2 px-3 py-2 text-sm text-text-main hover:bg-background-main rounded-lg" onClick={() => setShowDropdown(false)}><Bookmark size={16}/> Bookmarks</Link>
-                    <Link to="/folders" className="flex items-center gap-2 px-3 py-2 text-sm text-text-main hover:bg-background-main rounded-lg" onClick={() => setShowDropdown(false)}><Folder size={16}/> Folders</Link>
-                    <button onClick={() => {setShowPremium(true); setShowDropdown(false)}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-primary hover:bg-background-main rounded-lg"><Star size={16}/> Premium</button>
-                  </>
-                )}
-                {isAdmin && (
-                  <a href="/admin.html" className="flex items-center gap-2 px-3 py-2 text-sm text-purple-400 hover:bg-background-main rounded-lg"><Shield size={16} /> Admin Panel</a>
-                )}
-                <button onClick={() => {setShowProfile(true); setShowDropdown(false)}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-main hover:bg-background-main rounded-lg"><Settings size={16}/> Settings</button>
-                <div className="border-t border-surface my-1" />
-                <button onClick={() => {logout(); setShowDropdown(false)}} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-background-main rounded-lg"><LogOut size={16}/> Logout</button>
-              </div>
-            )}
-          </div>
+              <LogIn size={16} />
+              Login / Sign Up
+            </Link>
+          )}
 
           {/* Hamburger */}
-          <button className="md:hidden p-2 text-text-main" onClick={() => setIsOpen(!isOpen)}>
+          <button className="md:hidden p-2 text-text-main cursor-pointer" onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
@@ -97,22 +113,37 @@ export default function Navbar({ settings }: { settings?: any }) {
         <div className="md:hidden bg-background-main border-b border-surface p-4 flex flex-col gap-2">
             <Link to="/" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Home</Link>
             <Link to="/resources" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Resources</Link>
-            <Link to="/ai-assistant" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">AI Assistant</Link>
-            <Link to="/chat" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Global Chat</Link>
-            {isPremium && (
-                <>
-                    <Link to="/bookmarks" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Bookmarks</Link>
-                    <Link to="/folders" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Folders</Link>
-                </>
+            {user ? (
+              <>
+                <Link to="/ai-assistant" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">AI Assistant</Link>
+                <Link to="/chat" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Global Chat</Link>
+                {isPremium && (
+                    <>
+                        <Link to="/bookmarks" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Bookmarks</Link>
+                        <Link to="/folders" onClick={() => setIsOpen(false)} className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg">Folders</Link>
+                    </>
+                )}
+              </>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setIsOpen(false)}
+                className="w-full text-left p-3 text-sm font-bold text-primary hover:bg-surface rounded-lg flex items-center gap-2"
+              >
+                <LogIn size={16} />
+                Login / Sign Up
+              </Link>
             )}
             <button
               onClick={() => setIsLightMode(!isLightMode)}
-              className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg flex items-center justify-between"
+              className="p-3 text-sm font-bold text-text-main hover:bg-surface rounded-lg flex items-center justify-between cursor-pointer"
             >
               <span>Theme: {isLightMode ? 'Light' : 'Dark'}</span>
               {isLightMode ? <Sun size={16} className="text-amber-500" /> : <Moon size={16} className="text-primary" />}
             </button>
-            <button onClick={() => {logout(); setIsOpen(false)}} className="p-3 text-sm font-bold text-red-500 hover:bg-surface rounded-lg text-left">Logout</button>
+            {user && (
+              <button onClick={() => {logout(); setIsOpen(false)}} className="p-3 text-sm font-bold text-red-500 hover:bg-surface rounded-lg text-left cursor-pointer">Logout</button>
+            )}
         </div>
       )}
     </nav>

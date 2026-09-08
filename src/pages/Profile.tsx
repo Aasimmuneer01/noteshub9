@@ -22,7 +22,7 @@ export default function Profile() {
     if (userData?.premiumPlan === 'Lifetime' || userData?.premiumType === 'Lifetime') return 'Lifetime';
     const expiry = userData?.premiumExpiry || userData?.premiumExpiryDate;
     if (!expiry) return null;
-    const expiryDate = expiry.toDate();
+    const expiryDate = typeof expiry.toDate === "function" ? expiry.toDate() : new Date(expiry);
     const today = new Date();
     const diffTime = expiryDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -32,7 +32,7 @@ export default function Profile() {
   const getFormattedExpiry = () => {
     const expiry = userData?.premiumExpiry || userData?.premiumExpiryDate;
     if (!expiry) return 'N/A';
-    return expiry.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const d = typeof expiry.toDate === "function" ? expiry.toDate() : new Date(expiry); return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
 

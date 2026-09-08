@@ -24,6 +24,7 @@ import AdminPage from './pages/Admin';
 import Profile from './pages/Profile';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 import AuthScreen from './components/AuthScreen';
+import LoginGate from './components/LoginGate';
 import VerificationScreen from './components/VerificationScreen';
 import TermsOfUse from './pages/legal/TermsOfUse';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
@@ -66,10 +67,14 @@ function MainLayout({ settings }: { settings: any }) {
     );
   }
   
-  const publicRoutes = ['/terms', '/privacy', '/refund', '/copyright', '/guidelines', '/contact', '/ban-policy', '/premium-agreement'];
+  const publicRoutes = ['/', '/resources', '/login', '/terms', '/privacy', '/refund', '/copyright', '/guidelines', '/contact', '/ban-policy', '/premium-agreement'];
+  const [showAuthFlow, setShowAuthFlow] = useState(false);
   
   if (!user && !publicRoutes.includes(location.pathname)) {
-    return <AuthScreen />;
+    if (showAuthFlow) {
+      return <AuthScreen />;
+    }
+    return <LoginGate onAuth={() => setShowAuthFlow(true)} onLeave={() => navigate('/')} />;
   }
 
   if (user && verificationBlocked) {
@@ -312,12 +317,34 @@ function AppContent() {
   return <MainLayout settings={shutdownSettings} />;
 }
 
+function AuthRoute() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#020000] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  return <AuthScreen />;
+}
+
 export default function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
         <Router>
           <Routes>
+            <Route path="/login" element={<AuthRoute />} />
             <Route path="*" element={<AppContent />} />
           </Routes>
         </Router>
