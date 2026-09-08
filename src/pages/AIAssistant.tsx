@@ -41,7 +41,17 @@ export default function AIAssistant() {
         setLoadingAssistants(true);
         const q = query(collection(db, 'ai_assistants'), where('enabled', '==', true));
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const assistants = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            let assistants = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as AIAssistantConfig[];
+            if (assistants.length === 0) {
+                assistants = [{
+                    id: 'default-assistant',
+                    name: 'NotesHub9 AI',
+                    provider: 'google',
+                    model: 'gemini-2.5-flash',
+                    enabled: true,
+                    description: 'You are a helpful AI assistant for NotesHub9.'
+                }];
+            }
             setAvailableAssistants(assistants);
             setSelectedAssistantId(prev => {
                 if (assistants.length > 0) {
@@ -54,6 +64,15 @@ export default function AIAssistant() {
             setLoadingAssistants(false);
         }, (error) => {
             console.warn("Could not fetch assistants:", error);
+            setAvailableAssistants([{
+                id: 'default-assistant',
+                name: 'NotesHub9 AI',
+                provider: 'google',
+                model: 'gemini-2.5-flash',
+                enabled: true,
+                description: 'You are a helpful AI assistant for NotesHub9.'
+            }]);
+            setSelectedAssistantId('default-assistant');
             setLoadingAssistants(false);
         });
         return unsubscribe;

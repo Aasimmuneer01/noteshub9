@@ -126,17 +126,32 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="flex justify-center pt-2"
+            className="flex flex-col items-center gap-3 pt-2"
           >
             <button
               onClick={() => navigate('/chat')}
-              className="flex items-center gap-3 px-6 py-3 bg-surface border border-surface-border rounded-xl text-text-main font-semibold hover:bg-surface-light hover:border-primary/50 transition-all shadow-lg shadow-black/20 active:scale-95"
+              className="flex items-center gap-3 px-6 py-3 bg-surface border border-surface-border rounded-xl text-text-main font-semibold hover:bg-surface-light hover:border-primary/50 transition-all shadow-lg shadow-black/20 active:scale-95 w-64 justify-between cursor-pointer"
             >
-              <div className="bg-primary/20 p-1.5 rounded-lg">
-                <MessageSquare size={18} className="text-primary" />
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/20 p-1.5 rounded-lg">
+                  <MessageSquare size={18} className="text-primary" />
+                </div>
+                Global Chat
               </div>
-              Global Chat
-              <ArrowRight size={18} className="ml-1 text-text-muted" />
+              <ArrowRight size={18} className="text-text-muted" />
+            </button>
+
+            <button
+              onClick={() => navigate('/ai-assistant')}
+              className="flex items-center gap-3 px-6 py-3 bg-surface border border-surface-border rounded-xl text-text-main font-semibold hover:bg-surface-light hover:border-primary/50 transition-all shadow-lg shadow-black/20 active:scale-95 w-64 justify-between cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/20 p-1.5 rounded-lg">
+                  <Bot size={18} className="text-primary" />
+                </div>
+                AI Assistant
+              </div>
+              <ArrowRight size={18} className="text-text-muted" />
             </button>
           </motion.div>
         </section>
