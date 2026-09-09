@@ -6,6 +6,7 @@ import ProfileModal from './ProfileModal';
 import PremiumModal from './PremiumModal';
 import AuthScreen from './AuthScreen';
 import { MaintenanceCountdown } from './MaintenanceCountdown';
+import { AndroidAppAnnouncement } from './AndroidAppAnnouncement';
 
 export default function Navbar({ settings }: { settings?: any }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -33,6 +34,7 @@ export default function Navbar({ settings }: { settings?: any }) {
   return (
     <nav className="fixed top-0 w-full z-50 bg-background-main/90 backdrop-blur-md border-b border-surface shadow-md">
       <MaintenanceCountdown settings={settings} />
+      <AndroidAppAnnouncement />
       <ProfileModal isOpen={showProfile} onClose={() => setShowProfile(false)} />
       <PremiumModal isOpen={showPremium} onClose={() => setShowPremium(false)} />
 
