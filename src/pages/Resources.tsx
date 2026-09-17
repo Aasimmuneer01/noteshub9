@@ -12,7 +12,7 @@ import { Folder } from '../types';
 import LoginGate from '../components/LoginGate';
 import AuthScreen from '../components/AuthScreen';
 
-const SUBJECTS = ['All', 'Maths', 'English', 'Biology', 'Chemistry', 'Physics', 'Geography', 'History', 'Civics', 'Computer', 'Islamic Studies', 'Urdu'];
+const SUBJECTS = ['All', 'Maths', 'English', 'Biology', 'Chemistry', 'Physics', 'Geography', 'History', 'Civics', 'Computer', 'Islamic Studies', 'Urdu', 'Kashmiri'];
 
 export default function Resources() {
   const [resources, setResources] = useState<Resource[]>([]);

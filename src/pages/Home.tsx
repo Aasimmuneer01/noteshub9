@@ -62,7 +62,7 @@ export default function Home() {
     }
   };
 
-  const categories = ['Maths', 'Physics', 'Chemistry', 'Biology', 'English', 'Urdu', 'Islamiat', 'Pak Studies'];
+  const categories = ['Maths', 'Physics', 'Chemistry', 'Biology', 'English', 'Urdu', 'Islamiat', 'Pak Studies', 'Kashmiri'];
 
   return (
     <div className="flex flex-col min-h-screen bg-background-main pb-24">
