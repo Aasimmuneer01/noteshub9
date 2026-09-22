@@ -39,6 +39,7 @@ import TermsAcceptanceDialog from './components/TermsAcceptanceDialog';
 import PremiumNotificationPopup from './components/PremiumNotificationPopup';
 import WarningModal from './components/WarningModal';
 import { NewFeaturePopup } from './components/common/NewFeaturePopup';
+import WhatsAppCommunityPopup from './components/WhatsAppCommunityPopup';
 import ShutdownPage from './components/ShutdownPage';
 import { MaintenanceCountdown } from './components/MaintenanceCountdown';
 
@@ -106,6 +107,7 @@ function MainLayout({ settings }: { settings: any }) {
           });
         }
       }} />}
+      <WhatsAppCommunityPopup />
       <UnreadNotification />
       <Navbar settings={settings} />
       <main className="flex-1 overflow-auto pt-20">

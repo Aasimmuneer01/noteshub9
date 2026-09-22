@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase/config';
 import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { Edit2, Trash2, Plus, AlertTriangle, Info, Megaphone } from 'lucide-react';
+import { Edit2, Trash2, Plus, AlertTriangle, Info, Megaphone, MessageCircle } from 'lucide-react';
 
 export function AnnouncementsManager() {
   const [announcements, setAnnouncements] = useState<any[]>([]);
@@ -20,6 +20,9 @@ export function AnnouncementsManager() {
     e.preventDefault();
     const data = {
       text: currentAnnouncement.text,
+      title: currentAnnouncement.title || '',
+      subtitle: currentAnnouncement.subtitle || '',
+      link: currentAnnouncement.link || '',
       type: currentAnnouncement.type || 'Normal',
       enabled: currentAnnouncement.enabled ?? true,
       maintenanceDate: currentAnnouncement.maintenanceDate || null,
@@ -50,7 +53,7 @@ export function AnnouncementsManager() {
         <h2 className="text-xl font-bold">Broadcasts & Announcements</h2>
         <button 
           onClick={() => {
-            setCurrentAnnouncement({ text: '', type: 'Normal', enabled: true, maintenanceDate: '' });
+            setCurrentAnnouncement({ text: '', title: '', subtitle: '', link: '', type: 'Normal', enabled: true, maintenanceDate: '' });
             setIsEditing(true);
           }}
           className="bg-primary text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-bold"
@@ -84,6 +87,7 @@ export function AnnouncementsManager() {
                 <option value="Normal">Normal</option>
                 <option value="Important">Important</option>
                 <option value="Maintenance">Maintenance</option>
+                <option value="Community">WhatsApp / Community Popup</option>
               </select>
             </div>
             
@@ -99,6 +103,31 @@ export function AnnouncementsManager() {
               </label>
             </div>
           </div>
+
+          {currentAnnouncement.type === 'Community' && (
+            <div className="space-y-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Custom Title (Optional)</label>
+                <input 
+                  type="text" 
+                  className="w-full p-2 border rounded-lg bg-white"
+                  value={currentAnnouncement.title || ''}
+                  onChange={(e) => setCurrentAnnouncement({...currentAnnouncement, title: e.target.value})}
+                  placeholder="NotesHub9 Android App — Coming Soon! 📱"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Community Link (Optional)</label>
+                <input 
+                  type="url" 
+                  className="w-full p-2 border rounded-lg bg-white"
+                  value={currentAnnouncement.link || ''}
+                  onChange={(e) => setCurrentAnnouncement({...currentAnnouncement, link: e.target.value})}
+                  placeholder="https://chat.whatsapp.com/DImncFL88tM821VQHUnCLh"
+                />
+              </div>
+            </div>
+          )}
 
           {currentAnnouncement.type === 'Maintenance' && (
             <div>
@@ -139,6 +168,7 @@ export function AnnouncementsManager() {
                 <div className="flex items-center gap-2 mb-1">
                   {ann.type === 'Important' ? <AlertTriangle size={16} className="text-orange-500" /> : 
                    ann.type === 'Maintenance' ? <AlertTriangle size={16} className="text-red-500" /> : 
+                   ann.type === 'Community' ? <MessageCircle size={16} className="text-emerald-500" /> :
                    <Megaphone size={16} className="text-blue-500" />}
                   <span className="text-sm font-bold text-gray-700">{ann.type}</span>
                   {!ann.enabled && <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full font-bold">Disabled</span>}
@@ -146,6 +176,9 @@ export function AnnouncementsManager() {
                 <p className="text-gray-800">{ann.text}</p>
                 {ann.type === 'Maintenance' && ann.maintenanceDate && (
                   <p className="text-sm text-red-500 mt-1 font-mono">Scheduled: {new Date(ann.maintenanceDate).toLocaleString()}</p>
+                )}
+                {ann.type === 'Community' && ann.link && (
+                  <p className="text-xs text-emerald-600 mt-1 truncate">Link: {ann.link}</p>
                 )}
               </div>
               <div className="flex gap-2">
