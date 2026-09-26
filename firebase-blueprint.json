@@ -73,6 +73,25 @@
         "lastMessageTimestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["type"]
+    },
+    "WebsiteControl": {
+      "title": "WebsiteControl",
+      "description": "Global website maintenance and shutdown control settings",
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string", "enum": ["Online", "Maintenance", "Shutdown"] },
+        "shutdownManual": { "type": "boolean" },
+        "shutdownEnabled": { "type": "boolean" },
+        "enabled": { "type": "boolean" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "returnDate": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "announcement": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "restoreTime": { "type": "string", "format": "date-time" },
+        "globalFreePremium": { "type": "boolean" }
+      }
     }
   },
   "firestore": {
@@ -99,6 +118,10 @@
     "chats/{chatId}/messages/{messageId}": {
       "schema": "Message",
       "description": "Chat messages"
+    },
+    "website_control/settings": {
+      "schema": "WebsiteControl",
+      "description": "Website operational mode, shutdown, and maintenance settings"
     }
   }
 }

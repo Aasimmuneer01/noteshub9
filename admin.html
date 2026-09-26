@@ -535,12 +535,43 @@
                 <!-- Website Control Content -->
                 <section id="website-control" class="tab-content space-y-8">
                     <div class="bg-surface p-10 rounded-[2.5rem] border border-white/5 shadow-2xl">
-                        <h3 class="text-2xl font-black uppercase tracking-tight mb-8">Maintenance & Shutdown Scheduler</h3>
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/10">
+                            <div>
+                                <h3 class="text-2xl font-black uppercase tracking-tight">Website Control & Shutdown</h3>
+                                <p class="text-gray-400 text-sm">Control live website operational mode, emergency shutdown, and maintenance schedules</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button id="btn-quick-shutdown-on" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-red-600/20 transition-all cursor-pointer">
+                                    <i data-lucide="shield-alert" class="w-4 h-4"></i> Turn Shutdown ON
+                                </button>
+                                <button id="btn-quick-shutdown-off" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer">
+                                    <i data-lucide="globe" class="w-4 h-4"></i> Turn Shutdown OFF (Restore Site)
+                                </button>
+                            </div>
+                        </div>
                         
                         <div class="space-y-6">
+                            <!-- Live Status Card -->
+                            <div id="website-status-banner" class="p-6 rounded-2xl border border-white/10 bg-black/60 flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs uppercase font-bold text-gray-500 tracking-wider">Current Live Status</span>
+                                    <h4 id="website-current-status-text" class="text-xl font-black text-white mt-1">Checking status...</h4>
+                                </div>
+                                <span id="website-current-status-badge" class="px-4 py-1.5 rounded-full text-xs font-black uppercase bg-white/10 text-gray-300">Loading</span>
+                            </div>
+
                             <!-- Config -->
                             <div class="p-6 bg-black rounded-xl border border-white/5 space-y-4">
                                 <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Active Website Mode</label>
+                                        <select id="sch-mode" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
+                                            <option value="Online">Online (Normal Public Access)</option>
+                                            <option value="Maintenance">Maintenance Mode</option>
+                                            <option value="Shutdown">Shutdown Mode (Emergency Block)</option>
+                                        </select>
+                                    </div>
+
                                     <input id="shutdown-title" type="text" placeholder="Custom Title (e.g., Website Unavailable)" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
                                     <textarea id="shutdown-description" placeholder="Custom Description (e.g., We are currently performing maintenance.)" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold"></textarea>
                                     <input id="shutdown-return-date" type="date" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
@@ -548,19 +579,11 @@
                                     
                                     <div class="bg-surface p-4 rounded-xl border border-white/10 space-y-4">
                                         <div class="flex items-center justify-between">
-                                            <h4 class="font-bold text-lg">Scheduler Control</h4>
+                                            <h4 class="font-bold text-lg">Automated Scheduler</h4>
                                             <label class="flex items-center space-x-2">
                                                 <input type="checkbox" id="sch-enabled" class="form-checkbox text-primary h-5 w-5">
                                                 <span class="text-sm font-bold">Enable Schedule</span>
                                             </label>
-                                        </div>
-                                        
-                                        <div>
-                                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Mode</label>
-                                            <select id="sch-mode" class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
-                                                <option value="Maintenance">Maintenance Mode</option>
-                                                <option value="Shutdown">Shutdown Mode</option>
-                                            </select>
                                         </div>
 
                                         <div class="grid grid-cols-2 gap-4">
@@ -590,7 +613,7 @@
                                             <input id="sch-announcement" type="text" placeholder="e.g., Important: NotesHub9 will be under maintenance soon. Please save your work." class="w-full bg-white p-3 rounded-xl border border-gray-300 text-black font-semibold">
                                         </div>
 
-                                        <button id="save-website-settings" class="w-full py-3 bg-primary text-secondary rounded-lg font-bold">Save Schedule</button>
+                                        <button id="save-website-settings" class="w-full py-3 bg-primary text-secondary rounded-lg font-bold">Save Settings & Schedule</button>
                                         <button id="cancel-website-schedule" class="w-full py-2 bg-red-500 text-white rounded-lg font-bold">Clear Schedule</button>
                                         
                                         <div id="sch-preview" class="hidden mt-4 p-4 bg-black rounded-xl border border-white/10 space-y-2">
@@ -599,8 +622,6 @@
                                             <p id="sch-preview-countdown" class="text-lg font-mono font-bold text-white"></p>
                                         </div>
                                     </div>
-
-                                    <button id="save-website-settings" class="w-full py-3 bg-primary text-secondary rounded-lg font-bold">Save Changes</button>
                                 </div>
                                 <div class="mt-6 pt-6 border-t border-white/10 space-y-4">
                                     <div class="flex items-center justify-between">
@@ -1502,7 +1523,7 @@
             try {
                 const docRef = doc(db, 'website_control', 'settings');
                 const docSnap = await getDoc(docRef);
-                const settings = docSnap.exists() ? docSnap.data() : { mode: 'Maintenance', enabled: false };
+                const settings = docSnap.exists() ? docSnap.data() : { mode: 'Online', enabled: false };
                 
                 document.getElementById('shutdown-title').value = settings.title || '';
                 document.getElementById('shutdown-description').value = settings.description || '';
@@ -1518,7 +1539,28 @@
                 
                 const enabled = !!settings.enabled;
                 document.getElementById('sch-enabled').checked = enabled;
-                document.getElementById('sch-mode').value = settings.mode || 'Maintenance';
+                
+                const currentMode = settings.mode || (settings.shutdownManual || settings.shutdownEnabled ? 'Shutdown' : 'Online');
+                document.getElementById('sch-mode').value = currentMode;
+                
+                // Update Live Status Banner
+                const statusBanner = document.getElementById('website-status-banner');
+                const statusText = document.getElementById('website-current-status-text');
+                const statusBadge = document.getElementById('website-current-status-badge');
+                
+                if (currentMode === 'Shutdown' || settings.shutdownManual || settings.shutdownEnabled) {
+                    statusText.textContent = "Shutdown Mode Active (Website Blocked)";
+                    statusBadge.textContent = "Shutdown Active";
+                    statusBadge.className = "px-4 py-1.5 rounded-full text-xs font-black uppercase bg-red-500/20 text-red-400 border border-red-500/30";
+                } else if (currentMode === 'Maintenance') {
+                    statusText.textContent = "Maintenance Mode Active";
+                    statusBadge.textContent = "Maintenance Active";
+                    statusBadge.className = "px-4 py-1.5 rounded-full text-xs font-black uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30";
+                } else {
+                    statusText.textContent = "NotesHub9 is Live & Online";
+                    statusBadge.textContent = "Live & Online";
+                    statusBadge.className = "px-4 py-1.5 rounded-full text-xs font-black uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                }
                 
                 if (settings.startTime) {
                     const start = settings.startTime.toDate();
@@ -1591,9 +1633,50 @@
             }
         }
 
+        // Quick Shutdown Toggle Handlers
+        const quickShutdownOnBtn = document.getElementById('btn-quick-shutdown-on');
+        if (quickShutdownOnBtn) {
+            quickShutdownOnBtn.addEventListener('click', async () => {
+                try {
+                    const docRef = doc(db, 'website_control', 'settings');
+                    await setDoc(docRef, {
+                        mode: 'Shutdown',
+                        shutdownManual: true,
+                        shutdownEnabled: true,
+                        isShutdown: true,
+                        title: document.getElementById('shutdown-title').value || 'Website Unavailable',
+                        description: document.getElementById('shutdown-description').value || 'This website is currently undergoing maintenance. Please check back later.',
+                        contactEmail: document.getElementById('shutdown-email').value || 'noteshub9.official@gmail.com'
+                    }, { merge: true });
+                    toast('Shutdown Mode activated successfully! Website is blocked.', 'success');
+                    loadWebsiteControl();
+                } catch (err) {
+                    console.error(err);
+                    toast('Error activating Shutdown: ' + err.message, 'error');
+                }
+            });
+        }
 
-
-
+        const quickShutdownOffBtn = document.getElementById('btn-quick-shutdown-off');
+        if (quickShutdownOffBtn) {
+            quickShutdownOffBtn.addEventListener('click', async () => {
+                try {
+                    const docRef = doc(db, 'website_control', 'settings');
+                    await setDoc(docRef, {
+                        mode: 'Online',
+                        shutdownManual: false,
+                        shutdownEnabled: false,
+                        isShutdown: false,
+                        enabled: false
+                    }, { merge: true });
+                    toast('Shutdown Mode turned OFF! Website is live.', 'success');
+                    loadWebsiteControl();
+                } catch (err) {
+                    console.error(err);
+                    toast('Error restoring website: ' + err.message, 'error');
+                }
+            });
+        }
 
         document.getElementById('save-website-settings').addEventListener('click', async () => {
             const schEnabled = document.getElementById('sch-enabled').checked;
@@ -1614,6 +1697,9 @@
 
             const settings = {
                 mode: finalMode,
+                shutdownManual: finalMode === 'Shutdown' && !schEnabled,
+                shutdownEnabled: finalMode === 'Shutdown' && !schEnabled,
+                isShutdown: finalMode === 'Shutdown' && !schEnabled,
                 enabled: schEnabled,
                 title: document.getElementById('shutdown-title').value,
                 description: document.getElementById('shutdown-description').value,
@@ -1626,11 +1712,11 @@
             try {
                 const docRef = doc(db, 'website_control', 'settings');
                 await setDoc(docRef, settings, { merge: true });
-                toast('Maintenance schedule updated successfully', 'success');
+                toast('Website settings updated successfully', 'success');
                 loadWebsiteControl();
             } catch (e) {
                 console.error('Save settings error:', e);
-                toast('Failed to update schedule: ' + e.message, 'error');
+                toast('Failed to update settings: ' + e.message, 'error');
             }
         });
 
@@ -1693,6 +1779,11 @@
         });
 
         function startListeners() {
+            // WEBSITE CONTROL LISTENER
+            onSnapshot(doc(db, 'website_control', 'settings'), () => {
+                loadWebsiteControl();
+            }, (error) => console.warn('Snapshot error (website_control):', error));
+
             // USERS LISTENER
             onSnapshot(collection(db, 'users'), (snap) => {
                 usersData = snap.docs.map(d => ({ uid: d.id, ...d.data() }));

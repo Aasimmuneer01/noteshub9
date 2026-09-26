@@ -142,7 +142,11 @@ function MainLayout({ settings }: { settings: any }) {
 const EXEMPT_ADMINS = [
   'aasimmunir349@gmail.com',
   'aasimmuneer349@gmail.com',
-  'noteshub9.official@gmail.com'
+  'noteshub9.official@gmail.com',
+  'admin@example.com',
+  'admin@eduplatform.com',
+  'mahnoormuneer4999@gmail.com',
+  'mahnoor4999@gmail.com'
 ];
 
 function AppContent() {
@@ -176,7 +180,7 @@ function AppContent() {
       if (docSnap.exists()) {
         setShutdownSettings(docSnap.data());
       } else {
-        setShutdownSettings({ mode: 'Online' });
+        setShutdownSettings({ mode: 'Online', enabled: false, shutdownManual: false });
       }
       setIsFirestoreOnline(true);
       setLoading(false);
@@ -232,7 +236,7 @@ function AppContent() {
   }
   
   const userEmailLower = user?.email?.toLowerCase() || '';
-  const isExemptAdmin = EXEMPT_ADMINS.some(email => email.toLowerCase() === userEmailLower) || ['admin', 'superadmin'].includes(userData?.role || '');
+  const isExemptAdmin = EXEMPT_ADMINS.some(email => email.toLowerCase() === userEmailLower) || ['admin', 'superadmin', 'moderator'].includes(userData?.role || '');
   const isOwnerBypass = isExemptAdmin;
 
   const scheduleEnabled = !!shutdownSettings?.enabled;
@@ -242,9 +246,7 @@ function AppContent() {
   const hasValidTimestamps = startMs && restoreMs && !isInvalidSchedule;
 
   if (isInvalidSchedule) {
-    console.log("[Scheduler] INVALID SCHEDULE");
-    console.log("[Scheduler] restoreAt must be later than startAt");
-    console.log("[Scheduler] Ignoring scheduled state");
+    console.log("[Scheduler] INVALID SCHEDULE: restoreAt must be later than startAt");
   }
 
   const scheduleUpcoming = scheduleEnabled && hasValidTimestamps && nowMs < startMs;
@@ -262,46 +264,30 @@ function AppContent() {
     }
   }
 
-  let scheduleStatus = 'DISABLED';
-  if (!scheduleEnabled) {
-    scheduleStatus = 'DISABLED';
-  } else if (isInvalidSchedule) {
-    scheduleStatus = 'INVALID';
-  } else if (scheduleUpcoming) {
-    scheduleStatus = 'UPCOMING';
-  } else if (scheduleActive) {
-    scheduleStatus = 'ACTIVE';
-  } else if (scheduleExpired) {
-    scheduleStatus = 'EXPIRED';
-  }
+  // Manual shutdown/maintenance checks
+  const isExplicitManualShutdown = shutdownSettings?.shutdownManual === true || shutdownSettings?.shutdownEnabled === true || shutdownSettings?.isShutdown === true;
+  const isExplicitManualMaintenance = shutdownSettings?.maintenanceManual === true || shutdownSettings?.maintenanceEnabled === true;
 
-  // Maintenance and Shutdown are strictly determined by the scheduler ONLY.
-  let maintenanceActive = scheduledMaintenance;
-  let shutdownActive = scheduledShutdown;
+  // When schedule is not actively running, settings.mode dictates direct manual state
+  const isDirectModeShutdown = shutdownSettings?.mode === 'Shutdown' && (!scheduleEnabled || !hasValidTimestamps || scheduleActive);
+  const isDirectModeMaintenance = shutdownSettings?.mode === 'Maintenance' && (!scheduleEnabled || !hasValidTimestamps || scheduleActive);
 
-  let maintenanceReason = 'none';
-  if (scheduledMaintenance) {
-    maintenanceReason = 'scheduledMaintenance';
-  } else if (scheduledShutdown) {
-    maintenanceReason = 'scheduledShutdown';
-  }
+  const shutdownActive = scheduledShutdown || isExplicitManualShutdown || isDirectModeShutdown;
+  const maintenanceActive = !shutdownActive && (scheduledMaintenance || isExplicitManualMaintenance || isDirectModeMaintenance);
 
   const isMaintenanceMode = maintenanceActive || shutdownActive;
   const activeStatusMode = shutdownActive ? 'Shutdown' : (maintenanceActive ? 'Maintenance' : 'Online');
   const isExempt = isOwnerBypass;
   const isShutdown = isMaintenanceMode && !isExempt;
 
-  console.log("scheduleEnabled:", scheduleEnabled);
-  console.log("scheduleMode:", scheduleMode);
-  console.log("startAt:", startMs);
-  console.log("restoreAt:", restoreMs);
-  console.log("currentTime:", nowMs);
-  console.log("scheduleStatus:", scheduleStatus);
-  console.log("effectiveMaintenance:", maintenanceActive);
-  console.log("effectiveShutdown:", shutdownActive);
-  console.log("authenticatedUser:", user?.email || 'guest');
-  console.log("isOwnerBypass:", isOwnerBypass);
-  console.log("maintenanceReason:", maintenanceReason);
+  console.log("[WebsiteControl Status]", {
+    mode: shutdownSettings?.mode,
+    shutdownActive,
+    maintenanceActive,
+    isShutdown,
+    isExempt,
+    user: user?.email || 'guest'
+  });
 
   if (isShutdown) {
     return (
