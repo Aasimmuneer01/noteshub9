@@ -154,7 +154,7 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [isFirestoreOnline, setIsFirestoreOnline] = useState(true);
   const [tick, setTick] = useState(0);
-  const { user, loading: authLoading, userData } = useAuth();
+  const { user, loading: authLoading, userData, logout } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -191,6 +191,31 @@ function AppContent() {
     });
     return unsub;
   }, []);
+
+  // Auto logout currently logged in non-exempt users when shutdown is active
+  useEffect(() => {
+    if (shutdownSettings && user) {
+      const userEmailLower = user?.email?.toLowerCase() || '';
+      const isExemptAdmin = EXEMPT_ADMINS.some(email => email.toLowerCase() === userEmailLower) || ['admin', 'superadmin', 'moderator'].includes(userData?.role || '');
+      
+      const startMs = shutdownSettings?.startTime?.toDate ? shutdownSettings.startTime.toDate().getTime() : 0;
+      const restoreMs = shutdownSettings?.restoreTime?.toDate ? shutdownSettings.restoreTime.toDate().getTime() : 0;
+      const scheduleEnabled = !!shutdownSettings?.enabled;
+      const nowMs = Date.now();
+      const hasValidTimestamps = startMs && restoreMs && restoreMs > startMs;
+      const scheduleActive = scheduleEnabled && hasValidTimestamps && nowMs >= startMs && nowMs < restoreMs;
+      
+      const isExplicitManualShutdown = shutdownSettings?.shutdownManual === true || shutdownSettings?.shutdownEnabled === true || shutdownSettings?.isShutdown === true;
+      const isDirectModeShutdown = shutdownSettings?.mode === 'Shutdown' && (!scheduleEnabled || !hasValidTimestamps || scheduleActive);
+      const scheduledShutdown = scheduleActive && shutdownSettings?.mode === 'Shutdown';
+
+      const shutdownActive = scheduledShutdown || isExplicitManualShutdown || isDirectModeShutdown;
+
+      if (shutdownActive && !isExemptAdmin) {
+        logout().catch(err => console.error("Auto logout on shutdown error:", err));
+      }
+    }
+  }, [shutdownSettings, user, userData, logout]);
 
   if (loading || authLoading) {
     return (
